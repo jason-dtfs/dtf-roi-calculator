@@ -486,10 +486,13 @@ export function calculateROI(inputs: ROIInputs, businessModel: 'transfers' | 'ga
     monthlyRevenue = monthlyShirts * sellingPricePerShirt;
     monthlyBlankGarmentCost = monthlyShirts * blankGarmentCostPerShirt;
   } else if (businessModel === 'hybrid') {
+    // Split total output 50/50 — half sold as transfers, half pressed into finished garments
+    const hybridMonthlyTransfers = monthlyPrints * 0.5;
+    const hybridMonthlyShirts = (inputs.printsPerDay * 0.5 / printsPerShirt) * inputs.operatingDaysPerMonth;
     monthlyRevenue =
-      monthlyPrints * inputs.sellingPricePerPrint +
-      monthlyShirts * sellingPricePerShirt;
-    monthlyBlankGarmentCost = monthlyShirts * blankGarmentCostPerShirt;
+      hybridMonthlyTransfers * inputs.sellingPricePerPrint +
+      hybridMonthlyShirts * sellingPricePerShirt;
+    monthlyBlankGarmentCost = hybridMonthlyShirts * blankGarmentCostPerShirt;
   } else {
     monthlyRevenue = monthlyPrints * inputs.sellingPricePerPrint;
   }
