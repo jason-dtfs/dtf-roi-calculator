@@ -151,9 +151,8 @@ export default function Home() {
     setInputs(prev => {
       const printer = PRINTERS.find(p => p.id === prev.printerId);
       if (model === 'garments') return { ...prev, printsPerDay: 20 };
-      if (model === 'transfers') return { ...prev, printsPerDay: printer?.dailyOutputDefault ?? DEFAULT_INPUTS.printsPerDay };
-      // hybrid: keep current printsPerDay as the shared total output — split 50/50 in calculateROI
-      return prev;
+      if (model === 'transfers') return { ...prev, printsPerDay: Math.min(printer?.dailyOutputDefault ?? DEFAULT_INPUTS.printsPerDay, 50) };
+      return { ...prev, printsPerDay: 50 }; // hybrid: fixed 50/day shared pool
     });
   }, []);
 
