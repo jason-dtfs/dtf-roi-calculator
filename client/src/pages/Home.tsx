@@ -522,6 +522,7 @@ export default function Home() {
                     onShare={handleShare}
                     businessModel={businessModel}
                     uiMode={uiMode}
+                    breakEvenMonthlyVolume={breakEvenMonthlyVolume}
                   />
                 </div>
               </div>

@@ -11,7 +11,7 @@ import {
 } from 'recharts';
 import { type ROIResults, type ROIInputs, formatCurrency, PRINTERS, SHAKERS, HEAT_PRESSES } from '@/lib/roiData';
 import { exportROIPDF } from '@/lib/exportPDF';
-import { TrendingUp, DollarSign, Clock, BarChart2, Download, Share2, ChevronDown } from 'lucide-react';
+import { TrendingUp, DollarSign, Clock, BarChart2, Download, Share2, ChevronDown, AlertTriangle } from 'lucide-react';
 
 interface Props {
   results: ROIResults;
@@ -19,6 +19,7 @@ interface Props {
   onShare: () => void;
   businessModel: 'transfers' | 'garments' | 'hybrid';
   uiMode?: 'basic' | 'advanced';
+  breakEvenMonthlyVolume?: number;
 }
 
 // Brand teal
@@ -208,7 +209,7 @@ function AssumptionsAccordion() {
 
 // --- Main component ---
 
-export default function ResultsDashboard({ results, inputs, onShare, businessModel, uiMode }: Props) {
+export default function ResultsDashboard({ results, inputs, onShare, businessModel, uiMode, breakEvenMonthlyVolume }: Props) {
   const printer = PRINTERS.find(p => p.id === inputs.printerId);
   const shaker = SHAKERS.find(s => s.id === inputs.shakerId);
   const heatPress = HEAT_PRESSES.find(h => h.id === inputs.heatPressId);
@@ -268,16 +269,20 @@ export default function ResultsDashboard({ results, inputs, onShare, businessMod
       {/* KPI Grid */}
       <div className="grid grid-cols-2 gap-3">
         {uiMode === 'basic' && !isProfit ? (
-          <div className="section-card flex flex-col gap-2">
+          <div
+            className="section-card flex flex-col gap-2"
+            style={{ borderColor: 'rgba(239,68,68,0.3)', background: 'rgba(239,68,68,0.04)' }}
+          >
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Monthly Net Profit</span>
-              <div className="w-7 h-7 rounded-md flex items-center justify-center" style={{ background: 'oklch(0.96 0.003 260)' }}>
-                <DollarSign className="w-3.5 h-3.5" style={{ color: 'oklch(0.52 0.01 260)' }} />
+              <div className="w-7 h-7 rounded-md flex items-center justify-center" style={{ background: 'rgba(239,68,68,0.1)' }}>
+                <DollarSign className="w-3.5 h-3.5" style={{ color: '#ef4444' }} />
               </div>
             </div>
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              Increase your expected volume to reach profitability — try bumping up to the next tier.
-            </p>
+            <div className="text-2xl font-bold font-data tracking-tight" style={{ color: '#ef4444' }}>
+              {formatCurrency(results.monthlyNetProfit)}
+            </div>
+            <div className="text-xs text-muted-foreground">{formatCurrency(results.monthlyRevenue)} revenue</div>
           </div>
         ) : (
           <KPICard
@@ -307,6 +312,24 @@ export default function ResultsDashboard({ results, inputs, onShare, businessMod
           icon={BarChart2}
         />
       </div>
+
+      {/* Below-break-even warning (Basic mode only) */}
+      {uiMode === 'basic' && !isProfit && breakEvenMonthlyVolume !== undefined && (
+        <div
+          className="flex items-start gap-3 px-4 py-3.5 rounded-xl border"
+          style={{ borderColor: '#fca5a5', background: '#fef2f2' }}
+        >
+          <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" style={{ color: '#ef4444' }} />
+          <p className="text-sm leading-snug" style={{ color: '#991b1b' }}>
+            At this volume you're below break-even.{' '}
+            You need{' '}
+            <span className="font-bold">
+              ~{breakEvenMonthlyVolume >= 99999 ? 'N/A' : breakEvenMonthlyVolume.toLocaleString()}/mo
+            </span>{' '}
+            to turn a profit on this machine.
+          </p>
+        </div>
+      )}
 
       {/* Outsourcing savings */}
       {results.monthlyOutsourcingSavings > 0 && (
