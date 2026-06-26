@@ -148,10 +148,13 @@ export default function Home() {
 
   const handleBusinessModelChange = useCallback((model: BusinessModel) => {
     setBusinessModel(model);
-    if (model === 'garments') {
-      setInputs(prev => prev.printsPerDay > 100 ? { ...prev, printsPerDay: 100 } : prev);
+    if (model === 'hybrid') {
+      setInputs(prev => {
+        const printer = PRINTERS.find(p => p.id === prev.printerId);
+        return { ...prev, printsPerDay: printer?.dailyOutputFullTime ?? DEFAULT_INPUTS.printsPerDay };
+      });
     }
-    // transfers / hybrid: preserve whatever printsPerDay the user has set
+    // garments / transfers: preserve current printsPerDay
   }, []);
 
   const handleShare = useCallback(() => {

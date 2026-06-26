@@ -168,7 +168,7 @@ export default function BusinessInputs({ inputs, onChange, onBack, onContinue, b
           }
           value={inputs.printsPerDay}
           min={businessModel === 'garments' ? 1 : 10}
-          max={businessModel === 'garments' ? 100 : (printer?.dailyOutputMax ?? 1440)}
+          max={businessModel === 'garments' ? 500 : (printer?.dailyOutputMax ?? 1440)}
           step={businessModel === 'garments' ? 1 : 10}
           suffix="pcs"
           onChange={(v) => onChange('printsPerDay', v)}

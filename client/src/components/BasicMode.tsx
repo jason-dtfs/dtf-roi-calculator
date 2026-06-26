@@ -11,9 +11,9 @@ interface Props {
 }
 
 const SCHEDULES = [
-  { label: 'Part-time', sub: '3 days/week', days: 13, printsPerDay: 30 },
-  { label: 'Full-time', sub: '5 days/week', days: 22, printsPerDay: 50 },
-  { label: 'High-volume', sub: '6 days/week', days: 26, printsPerDay: 100 },
+  { label: 'Part-time',  sub: '3 days/week', days: 13, tier: 'dailyOutputPartTime'  as const, garmentPpd: 20 },
+  { label: 'Full-time',  sub: '5 days/week', days: 22, tier: 'dailyOutputFullTime'  as const, garmentPpd: 45 },
+  { label: 'High-volume',sub: '6 days/week', days: 26, tier: 'dailyOutputHighVolume' as const, garmentPpd: 80 },
 ] as const;
 
 export default function BasicMode({ inputs, businessModel, onBusinessModelChange, onPrinterChange, onBundleSelect, onChange }: Props) {
@@ -137,7 +137,11 @@ export default function BasicMode({ inputs, businessModel, onBusinessModelChange
             return (
               <button
                 key={s.days}
-                onClick={() => { onChange('operatingDaysPerMonth', s.days); onChange('printsPerDay', s.printsPerDay); }}
+                onClick={() => {
+                  onChange('operatingDaysPerMonth', s.days);
+                  const printer = PRINTERS.find(p => p.id === inputs.printerId);
+                  onChange('printsPerDay', businessModel === 'garments' ? s.garmentPpd : (printer?.[s.tier] ?? s.garmentPpd));
+                }}
                 className="flex flex-col items-center gap-0.5 px-2 py-3 rounded-lg border transition-all"
                 style={
                   isActive
