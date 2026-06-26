@@ -160,12 +160,16 @@ export default function BusinessInputs({ inputs, onChange, onBack, onContinue, b
 
       <SectionGroup title="Production Volume">
         <SliderField
-          label="Prints per day"
-          tooltip={`Your selected printer (${printer?.name}) can produce ${printer?.dailyOutputMin}–${printer?.dailyOutputMax} prints/day.`}
+          label={businessModel === 'garments' ? 'Shirts pressed per day' : 'Prints per day'}
+          tooltip={
+            businessModel === 'garments'
+              ? 'Number of finished garments you can heat-press per day. Pressing is slower than printing — 15–40 shirts/day is typical.'
+              : `Your selected printer (${printer?.name}) can produce ${printer?.dailyOutputMin}–${printer?.dailyOutputMax} prints/day.`
+          }
           value={inputs.printsPerDay}
-          min={10}
-          max={printer?.dailyOutputMax ?? 1440}
-          step={10}
+          min={businessModel === 'garments' ? 1 : 10}
+          max={businessModel === 'garments' ? 100 : (printer?.dailyOutputMax ?? 1440)}
+          step={businessModel === 'garments' ? 1 : 10}
           suffix="pcs"
           onChange={(v) => onChange('printsPerDay', v)}
         />

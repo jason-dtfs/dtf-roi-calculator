@@ -146,6 +146,15 @@ export default function Home() {
     }));
   }, []);
 
+  const handleBusinessModelChange = useCallback((model: BusinessModel) => {
+    setBusinessModel(model);
+    setInputs(prev => {
+      const printer = PRINTERS.find(p => p.id === prev.printerId);
+      const printerDefault = printer?.dailyOutputDefault ?? prev.printsPerDay;
+      return { ...prev, printsPerDay: model === 'garments' ? 20 : printerDefault };
+    });
+  }, []);
+
   const handleShare = useCallback(() => {
     const url = encodeInputsToURL(inputs, businessModel, uiMode);
     navigator.clipboard.writeText(url).then(() => {
@@ -279,7 +288,7 @@ export default function Home() {
                     <BasicMode
                       inputs={inputs}
                       businessModel={businessModel}
-                      onBusinessModelChange={setBusinessModel}
+                      onBusinessModelChange={handleBusinessModelChange}
                       onPrinterChange={handlePrinterChange}
                       onBundleSelect={handleBundleSelect}
                       onChange={updateInput}
@@ -359,7 +368,7 @@ export default function Home() {
                         onBack={() => setActiveSection('equipment')}
                         onContinue={() => setActiveSection('financing')}
                         businessModel={businessModel}
-                        onBusinessModelChange={setBusinessModel}
+                        onBusinessModelChange={handleBusinessModelChange}
                       />
                     )}
                     {activeSection === 'financing' && (
