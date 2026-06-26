@@ -18,6 +18,7 @@ interface Props {
   inputs: ROIInputs;
   onShare: () => void;
   businessModel: 'transfers' | 'garments' | 'hybrid';
+  uiMode?: 'basic' | 'advanced';
 }
 
 // Brand teal
@@ -207,7 +208,7 @@ function AssumptionsAccordion() {
 
 // --- Main component ---
 
-export default function ResultsDashboard({ results, inputs, onShare, businessModel }: Props) {
+export default function ResultsDashboard({ results, inputs, onShare, businessModel, uiMode }: Props) {
   const printer = PRINTERS.find(p => p.id === inputs.printerId);
   const shaker = SHAKERS.find(s => s.id === inputs.shakerId);
   const heatPress = HEAT_PRESSES.find(h => h.id === inputs.heatPressId);
@@ -266,13 +267,27 @@ export default function ResultsDashboard({ results, inputs, onShare, businessMod
 
       {/* KPI Grid */}
       <div className="grid grid-cols-2 gap-3">
-        <KPICard
-          label="Monthly Net Profit"
-          value={formatCurrency(results.monthlyNetProfit)}
-          sub={`${formatCurrency(results.monthlyRevenue)} revenue`}
-          accent={isProfit}
-          icon={DollarSign}
-        />
+        {uiMode === 'basic' && !isProfit ? (
+          <div className="section-card flex flex-col gap-2">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Monthly Net Profit</span>
+              <div className="w-7 h-7 rounded-md flex items-center justify-center" style={{ background: 'oklch(0.96 0.003 260)' }}>
+                <DollarSign className="w-3.5 h-3.5" style={{ color: 'oklch(0.52 0.01 260)' }} />
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Increase your expected volume to reach profitability — try bumping up to the next tier.
+            </p>
+          </div>
+        ) : (
+          <KPICard
+            label="Monthly Net Profit"
+            value={formatCurrency(results.monthlyNetProfit)}
+            sub={`${formatCurrency(results.monthlyRevenue)} revenue`}
+            accent={isProfit}
+            icon={DollarSign}
+          />
+        )}
         <KPICard
           label="Payback Period"
           value={paybackLabel}

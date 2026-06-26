@@ -38,7 +38,7 @@ const NUM_KEYS: Array<keyof ROIInputs> = [
 ];
 const STR_KEYS: Array<keyof ROIInputs> = ['printerId', 'shakerId', 'heatPressId'];
 
-function encodeInputsToURL(inputs: ROIInputs, businessModel: BusinessModel = 'transfers', uiMode: UIMode = 'advanced'): string {
+function encodeInputsToURL(inputs: ROIInputs, businessModel: BusinessModel = 'transfers', uiMode: UIMode = 'advanced', basicModePreset: number | null = null): string {
   const params = new URLSearchParams();
   STR_KEYS.forEach(k => params.set(k, inputs[k] as string));
   NUM_KEYS.forEach(k => params.set(k, String(inputs[k])));
@@ -46,6 +46,7 @@ function encodeInputsToURL(inputs: ROIInputs, businessModel: BusinessModel = 'tr
   if (inputs.otherEquipmentIds.length) params.set('otherEquipmentIds', inputs.otherEquipmentIds.join(','));
   if (businessModel !== 'transfers') params.set('businessModel', businessModel);
   if (uiMode !== 'advanced') params.set('mode', uiMode);
+  if (basicModePreset !== null) params.set('preset', String(basicModePreset));
   return `${window.location.origin}${window.location.pathname}?${params.toString()}`;
 }
 
@@ -96,6 +97,11 @@ export default function Home() {
     const val = new URLSearchParams(window.location.search).get('mode');
     return val === 'basic' ? 'basic' : 'advanced';
   });
+  const [basicModePreset, setBasicModePreset] = useState<number | null>(() => {
+    const val = new URLSearchParams(window.location.search).get('preset');
+    const n = val ? parseInt(val, 10) : null;
+    return (n === 200 || n === 500 || n === 1000 || n === 2500) ? n : null;
+  });
   const [activeSection, setActiveSection] = useState<Section>('equipment');
   const [mode, setMode] = useState<Mode>('calculator');
   const [mobileResultsOpen, setMobileResultsOpen] = useState(false);
@@ -104,10 +110,10 @@ export default function Home() {
   // Sync URL
   useEffect(() => {
     if (mode === 'calculator') {
-      const url = encodeInputsToURL(inputs, businessModel, uiMode);
+      const url = encodeInputsToURL(inputs, businessModel, uiMode, basicModePreset);
       window.history.replaceState(null, '', url);
     }
-  }, [inputs, mode, businessModel, uiMode]);
+  }, [inputs, mode, businessModel, uiMode, basicModePreset]);
 
   const updateInput = useCallback(<K extends keyof ROIInputs>(key: K, value: ROIInputs[K]) => {
     setInputs(prev => ({ ...prev, [key]: value }));
@@ -122,18 +128,21 @@ export default function Home() {
       ...prev,
       printerId: id,
       shakerId: defaultShaker,
-      printsPerDay: printer?.dailyOutputDefault ?? prev.printsPerDay,
+      printsPerDay: basicModePreset !== null
+        ? Math.round(basicModePreset / 22)
+        : (printer?.dailyOutputDefault ?? prev.printsPerDay),
       inkCostPerMonth: printer?.inkCostPreset ?? prev.inkCostPerMonth,
       cutterId: null,
       otherEquipmentIds: [],
     }));
-  }, []);
+  }, [basicModePreset]);
 
   // Bundle preset handler
   const handleBundleSelect = useCallback((bundleId: string) => {
     const bundle = BUNDLE_PRESETS.find(b => b.id === bundleId);
     if (!bundle) return;
     const printer = PRINTERS.find(p => p.id === bundle.printerId);
+    setBasicModePreset(null);
     setInputs(prev => ({
       ...prev,
       printerId: bundle.printerId,
@@ -148,17 +157,14 @@ export default function Home() {
 
   const handleBusinessModelChange = useCallback((model: BusinessModel) => {
     setBusinessModel(model);
-    if (model === 'hybrid') {
-      setInputs(prev => {
-        const printer = PRINTERS.find(p => p.id === prev.printerId);
-        return { ...prev, printsPerDay: printer?.dailyOutputFullTime ?? DEFAULT_INPUTS.printsPerDay };
-      });
+    if (model === 'garments') {
+      setInputs(prev => prev.printsPerDay > 100 ? { ...prev, printsPerDay: 100 } : prev);
     }
-    // garments / transfers: preserve current printsPerDay
+    // hybrid / transfers: preserve current printsPerDay
   }, []);
 
   const handleShare = useCallback(() => {
-    const url = encodeInputsToURL(inputs, businessModel, uiMode);
+    const url = encodeInputsToURL(inputs, businessModel, uiMode, basicModePreset);
     navigator.clipboard.writeText(url).then(() => {
       toast.success('Link copied!', {
         description: 'Share this URL to pre-fill the calculator with your current configuration.',
@@ -167,7 +173,7 @@ export default function Home() {
     }).catch(() => {
       window.prompt('Copy this link to share your configuration:', url);
     });
-  }, [inputs, businessModel, uiMode]);
+  }, [inputs, businessModel, uiMode, basicModePreset]);
 
   const results = useMemo(() => calculateROI(inputs, businessModel), [inputs, businessModel]);
 
@@ -294,6 +300,8 @@ export default function Home() {
                       onPrinterChange={handlePrinterChange}
                       onBundleSelect={handleBundleSelect}
                       onChange={updateInput}
+                      basicModePreset={basicModePreset}
+                      onBasicModePresetChange={setBasicModePreset}
                     />
                     <div className="lg:hidden">
                       <button
@@ -414,7 +422,7 @@ export default function Home() {
                 </div>
 
                 <div className={`${mobileResultsOpen ? 'block' : 'hidden'} lg:block`}>
-                  <ResultsDashboard results={results} inputs={inputs} onShare={handleShare} businessModel={businessModel} />
+                  <ResultsDashboard results={results} inputs={inputs} onShare={handleShare} businessModel={businessModel} uiMode={uiMode} />
                 </div>
               </div>
             </div>

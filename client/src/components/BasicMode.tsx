@@ -8,15 +8,18 @@ interface Props {
   onPrinterChange: (id: string) => void;
   onBundleSelect: (bundleId: string) => void;
   onChange: <K extends keyof ROIInputs>(key: K, value: ROIInputs[K]) => void;
+  basicModePreset: number | null;
+  onBasicModePresetChange: (preset: number | null) => void;
 }
 
-const SCHEDULES = [
-  { label: 'Part-time',  sub: '3 days/week', days: 13, tier: 'dailyOutputPartTime'  as const, garmentPpd: 20 },
-  { label: 'Full-time',  sub: '5 days/week', days: 22, tier: 'dailyOutputFullTime'  as const, garmentPpd: 45 },
-  { label: 'High-volume',sub: '6 days/week', days: 26, tier: 'dailyOutputHighVolume' as const, garmentPpd: 80 },
+const VOLUME_PRESETS = [
+  { label: 'Just starting out', sub: '200/mo',    monthlyVolume: 200  },
+  { label: 'Side business',     sub: '500/mo',    monthlyVolume: 500  },
+  { label: 'Growing shop',      sub: '1,000/mo',  monthlyVolume: 1000 },
+  { label: 'Full production',   sub: '2,500/mo',  monthlyVolume: 2500 },
 ] as const;
 
-export default function BasicMode({ inputs, businessModel, onBusinessModelChange, onPrinterChange, onBundleSelect, onChange }: Props) {
+export default function BasicMode({ inputs, businessModel, onBusinessModelChange, onPrinterChange, onBundleSelect, onChange, basicModePreset, onBasicModePresetChange }: Props) {
   const handlePrinterSelect = (id: string) => {
     onPrinterChange(id); // handles shaker, printsPerDay, inkCost
     onChange('heatPressId', 'prismaAuto');
@@ -125,38 +128,28 @@ export default function BasicMode({ inputs, businessModel, onBusinessModelChange
         </div>
       </div>
 
-      {/* Schedule */}
+      {/* Monthly volume */}
       <div className="section-card space-y-3">
         <div>
-          <h3 className="text-sm font-semibold text-foreground">Production Schedule</h3>
-          <p className="text-xs text-muted-foreground mt-0.5">How often will you run production?</p>
+          <h3 className="text-sm font-semibold text-foreground">How many do you expect to sell per month?</h3>
         </div>
-        <div className="grid grid-cols-3 gap-2">
-          {SCHEDULES.map(s => {
-            const isActive = inputs.operatingDaysPerMonth === s.days;
+        <div className="grid grid-cols-2 gap-2">
+          {VOLUME_PRESETS.map(v => {
+            const isActive = basicModePreset === v.monthlyVolume;
             return (
               <button
-                key={s.days}
+                key={v.monthlyVolume}
                 onClick={() => {
-                  onChange('operatingDaysPerMonth', s.days);
-                  const printer = PRINTERS.find(p => p.id === inputs.printerId);
-                  onChange('printsPerDay', businessModel === 'garments' ? s.garmentPpd : (printer?.[s.tier] ?? s.garmentPpd));
+                  onBasicModePresetChange(v.monthlyVolume);
+                  onChange('printsPerDay', Math.round(v.monthlyVolume / 22));
                 }}
-                className="flex flex-col items-center gap-0.5 px-2 py-3 rounded-lg border transition-all"
-                style={
-                  isActive
-                    ? { borderColor: '#45C1BF', background: 'rgba(69,193,191,0.07)' }
-                    : { borderColor: 'oklch(0.91 0.004 260)', background: 'transparent' }
-                }
+                className="flex flex-col items-start gap-0.5 px-3 py-2.5 rounded-lg border transition-all"
+                style={isActive
+                  ? { borderColor: '#45C1BF', background: 'rgba(69,193,191,0.07)' }
+                  : { borderColor: 'oklch(0.91 0.004 260)', background: 'transparent' }}
               >
-                <span className="text-sm font-semibold text-foreground">{s.label}</span>
-                <span className="text-xs text-muted-foreground">{s.sub}</span>
-                <span
-                  className="text-xs font-medium mt-0.5"
-                  style={{ color: isActive ? '#45C1BF' : 'oklch(0.55 0.016 286)' }}
-                >
-                  {s.days} days/mo
-                </span>
+                <span className="text-sm font-semibold text-foreground">{v.label}</span>
+                <span className="text-xs text-muted-foreground font-data">{v.sub}</span>
               </button>
             );
           })}

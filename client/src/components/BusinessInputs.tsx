@@ -4,8 +4,9 @@
  * Consumables split into: film & powder (per print) + ink (monthly flat)
  */
 
+import { useState } from 'react';
 import { type ROIInputs, PRINTERS } from '@/lib/roiData';
-import { ChevronLeft, ChevronRight, Info } from 'lucide-react';
+import { ChevronDown, ChevronLeft, ChevronRight, Info } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 export type BusinessModel = 'transfers' | 'garments' | 'hybrid';
@@ -27,6 +28,12 @@ export const BUSINESS_MODEL_OPTIONS: { value: BusinessModel; label: string; desc
     description: 'I do both',
   },
 ];
+
+const SCHEDULE_TIERS = [
+  { label: 'Part-time',   tier: 'dailyOutputPartTime'   as const, garmentPpd: 20 },
+  { label: 'Full-time',   tier: 'dailyOutputFullTime'   as const, garmentPpd: 45 },
+  { label: 'High-volume', tier: 'dailyOutputHighVolume' as const, garmentPpd: 80 },
+] as const;
 
 interface Props {
   inputs: ROIInputs;
@@ -114,7 +121,10 @@ function SectionGroup({ title, children }: { title: string; children: React.Reac
 }
 
 export default function BusinessInputs({ inputs, onChange, onBack, onContinue, businessModel, onBusinessModelChange }: Props) {
+  const [fineTuneOpen, setFineTuneOpen] = useState(false);
   const printer = PRINTERS.find(p => p.id === inputs.printerId);
+  const getSchedulePpd = (tier: 'dailyOutputPartTime' | 'dailyOutputFullTime' | 'dailyOutputHighVolume', garmentPpd: number) =>
+    businessModel === 'garments' ? garmentPpd : (printer?.[tier] ?? garmentPpd);
 
   return (
     <div className="space-y-3">
@@ -158,6 +168,49 @@ export default function BusinessInputs({ inputs, onChange, onBack, onContinue, b
         </div>
       </div>
 
+      {/* Production Schedule */}
+      <div className="section-card space-y-3">
+        <div>
+          <h3 className="text-sm font-semibold text-foreground">Production Schedule</h3>
+          <p className="text-xs text-muted-foreground mt-0.5">Select a volume preset — adjust in fine-tune below.</p>
+        </div>
+        <div className="grid grid-cols-3 gap-2">
+          {SCHEDULE_TIERS.map(t => {
+            const ppd = getSchedulePpd(t.tier, t.garmentPpd);
+            const isActive = inputs.printsPerDay === ppd;
+            return (
+              <button
+                key={t.label}
+                onClick={() => onChange('printsPerDay', ppd)}
+                className="flex flex-col items-center gap-0.5 px-2 py-2.5 rounded-lg border transition-all"
+                style={isActive
+                  ? { borderColor: '#45C1BF', background: 'rgba(69,193,191,0.07)' }
+                  : { borderColor: 'oklch(0.91 0.004 260)', background: 'transparent' }}
+              >
+                <span className="text-xs font-semibold text-foreground">{t.label}</span>
+                <span className="text-xs text-muted-foreground font-data">{ppd}/day</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Fine-tune collapsible */}
+      <div className="section-card">
+        <p className="text-xs text-muted-foreground mb-2">Advanced inputs — customize costs and pricing</p>
+        <button
+          onClick={() => setFineTuneOpen(o => !o)}
+          className="w-full flex items-center justify-between"
+        >
+          <span className="text-sm font-semibold text-foreground">Fine-tune your numbers</span>
+          <ChevronDown
+            className="w-4 h-4 text-muted-foreground shrink-0 transition-transform duration-200"
+            style={{ transform: fineTuneOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}
+          />
+        </button>
+      </div>
+
+      {fineTuneOpen && <>
       <SectionGroup title="Production Volume">
         <SliderField
           label={businessModel === 'garments' ? 'Shirts pressed per day' : 'Prints per day'}
@@ -335,6 +388,7 @@ export default function BusinessInputs({ inputs, onChange, onBack, onContinue, b
           onChange={(v) => onChange('currentMonthlyOutsourcingVolume', v)}
         />
       </SectionGroup>
+      </>}
 
       {/* Navigation */}
       <div className="flex gap-2">
