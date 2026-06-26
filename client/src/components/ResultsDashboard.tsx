@@ -154,38 +154,52 @@ const ASSUMPTIONS: AssumptionItem[] = [
 ];
 
 function AssumptionsAccordion() {
+  const [sectionOpen, setSectionOpen] = useState(false);
   const [openIndex, setOpenIndex] = useState<number | null>(null);
 
   return (
     <div className="section-card">
-      <h3 className="text-sm font-semibold text-foreground mb-3">How We Calculate This</h3>
-      <p className="text-xs text-muted-foreground mb-4">
-        All projections are based solely on the inputs you provide. Actual results will vary based on your market, print sizes, ink coverage, and operational efficiency.
-      </p>
-      <div className="space-y-1">
-        {ASSUMPTIONS.map((item, i) => {
-          const isOpen = openIndex === i;
-          return (
-            <div key={i} className="border border-border rounded-lg overflow-hidden">
-              <button
-                onClick={() => setOpenIndex(isOpen ? null : i)}
-                className="w-full flex items-center justify-between px-3.5 py-2.5 text-left hover:bg-muted/30 transition-colors"
-              >
-                <span className="text-sm font-medium text-foreground">{item.title}</span>
-                <ChevronDown
-                  className="w-4 h-4 text-muted-foreground shrink-0 transition-transform duration-200"
-                  style={{ transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}
-                />
-              </button>
-              {isOpen && (
-                <div className="px-3.5 pb-3 pt-1 border-t border-border bg-muted/20">
-                  <p className="text-xs text-muted-foreground leading-relaxed">{item.content}</p>
+      <button
+        onClick={() => setSectionOpen(o => !o)}
+        className="w-full flex items-center justify-between text-left"
+      >
+        <h3 className="text-sm font-semibold text-foreground">How We Calculate This</h3>
+        <ChevronDown
+          className="w-4 h-4 text-muted-foreground shrink-0 transition-transform duration-200"
+          style={{ transform: sectionOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}
+        />
+      </button>
+      {sectionOpen && (
+        <>
+          <p className="text-xs text-muted-foreground mt-3 mb-4">
+            All projections are based solely on the inputs you provide. Actual results will vary based on your market, print sizes, ink coverage, and operational efficiency.
+          </p>
+          <div className="space-y-1">
+            {ASSUMPTIONS.map((item, i) => {
+              const isOpen = openIndex === i;
+              return (
+                <div key={i} className="border border-border rounded-lg overflow-hidden">
+                  <button
+                    onClick={() => setOpenIndex(isOpen ? null : i)}
+                    className="w-full flex items-center justify-between px-3.5 py-2.5 text-left hover:bg-muted/30 transition-colors"
+                  >
+                    <span className="text-sm font-medium text-foreground">{item.title}</span>
+                    <ChevronDown
+                      className="w-4 h-4 text-muted-foreground shrink-0 transition-transform duration-200"
+                      style={{ transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}
+                    />
+                  </button>
+                  {isOpen && (
+                    <div className="px-3.5 pb-3 pt-1 border-t border-border bg-muted/20">
+                      <p className="text-xs text-muted-foreground leading-relaxed">{item.content}</p>
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
+              );
+            })}
+          </div>
+        </>
+      )}
     </div>
   );
 }
