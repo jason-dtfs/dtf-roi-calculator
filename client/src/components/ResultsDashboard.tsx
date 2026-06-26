@@ -17,6 +17,7 @@ interface Props {
   results: ROIResults;
   inputs: ROIInputs;
   onShare: () => void;
+  businessModel: 'transfers' | 'garments' | 'hybrid';
 }
 
 // Brand teal
@@ -206,7 +207,7 @@ function AssumptionsAccordion() {
 
 // --- Main component ---
 
-export default function ResultsDashboard({ results, inputs, onShare }: Props) {
+export default function ResultsDashboard({ results, inputs, onShare, businessModel }: Props) {
   const printer = PRINTERS.find(p => p.id === inputs.printerId);
   const shaker = SHAKERS.find(s => s.id === inputs.shakerId);
   const heatPress = HEAT_PRESSES.find(h => h.id === inputs.heatPressId);
@@ -426,7 +427,7 @@ export default function ResultsDashboard({ results, inputs, onShare }: Props) {
         <h3 className="text-sm font-semibold text-foreground mb-3">Monthly Production Summary</h3>
         <div className="grid grid-cols-2 gap-x-6">
           {[
-            { label: 'Total Prints', value: `${results.monthlyPrints.toLocaleString()} pcs` },
+            { label: businessModel === 'garments' ? 'Total Shirts Pressed' : businessModel === 'hybrid' ? 'Total Units' : 'Total Prints', value: `${results.monthlyPrints.toLocaleString()} pcs` },
             { label: 'Gross Profit', value: formatCurrency(results.monthlyGrossProfit) },
             { label: 'Revenue', value: formatCurrency(results.monthlyRevenue) },
             { label: 'Profit Margin', value: results.monthlyRevenue > 0 ? `${Math.round((results.monthlyNetProfit / results.monthlyRevenue) * 100)}%` : 'N/A' },

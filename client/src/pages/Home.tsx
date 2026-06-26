@@ -148,12 +148,10 @@ export default function Home() {
 
   const handleBusinessModelChange = useCallback((model: BusinessModel) => {
     setBusinessModel(model);
-    setInputs(prev => {
-      const printer = PRINTERS.find(p => p.id === prev.printerId);
-      if (model === 'garments') return { ...prev, printsPerDay: 20 };
-      if (model === 'transfers') return { ...prev, printsPerDay: Math.min(printer?.dailyOutputDefault ?? DEFAULT_INPUTS.printsPerDay, 50) };
-      return { ...prev, printsPerDay: 50 }; // hybrid: fixed 50/day shared pool
-    });
+    if (model === 'garments') {
+      setInputs(prev => prev.printsPerDay > 100 ? { ...prev, printsPerDay: 100 } : prev);
+    }
+    // transfers / hybrid: preserve whatever printsPerDay the user has set
   }, []);
 
   const handleShare = useCallback(() => {
@@ -413,7 +411,7 @@ export default function Home() {
                 </div>
 
                 <div className={`${mobileResultsOpen ? 'block' : 'hidden'} lg:block`}>
-                  <ResultsDashboard results={results} inputs={inputs} onShare={handleShare} />
+                  <ResultsDashboard results={results} inputs={inputs} onShare={handleShare} businessModel={businessModel} />
                 </div>
               </div>
             </div>
