@@ -8,11 +8,33 @@ import { type ROIInputs, PRINTERS } from '@/lib/roiData';
 import { ChevronLeft, ChevronRight, Info } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
+export type BusinessModel = 'transfers' | 'garments' | 'hybrid';
+
+const BUSINESS_MODEL_OPTIONS: { value: BusinessModel; label: string; description: string }[] = [
+  {
+    value: 'transfers',
+    label: 'Sell Transfers',
+    description: 'I print DTF transfers and sell them per print',
+  },
+  {
+    value: 'garments',
+    label: 'Sell Finished Garments',
+    description: 'I press transfers onto blank shirts and sell the finished product',
+  },
+  {
+    value: 'hybrid',
+    label: 'Mixed / Both',
+    description: 'I do both',
+  },
+];
+
 interface Props {
   inputs: ROIInputs;
   onChange: <K extends keyof ROIInputs>(key: K, value: ROIInputs[K]) => void;
   onBack: () => void;
   onContinue: () => void;
+  businessModel: BusinessModel;
+  onBusinessModelChange: (model: BusinessModel) => void;
 }
 
 interface SliderFieldProps {
@@ -91,11 +113,51 @@ function SectionGroup({ title, children }: { title: string; children: React.Reac
   );
 }
 
-export default function BusinessInputs({ inputs, onChange, onBack, onContinue }: Props) {
+export default function BusinessInputs({ inputs, onChange, onBack, onContinue, businessModel, onBusinessModelChange }: Props) {
   const printer = PRINTERS.find(p => p.id === inputs.printerId);
 
   return (
     <div className="space-y-3">
+      {/* Business model selector */}
+      <div className="section-card space-y-3">
+        <div>
+          <h3 className="text-sm font-semibold text-foreground">Business Model</h3>
+          <p className="text-xs text-muted-foreground mt-0.5">How do you make money with your DTF setup?</p>
+        </div>
+        <div className="flex flex-col gap-2">
+          {BUSINESS_MODEL_OPTIONS.map(opt => {
+            const isActive = businessModel === opt.value;
+            return (
+              <button
+                key={opt.value}
+                onClick={() => onBusinessModelChange(opt.value)}
+                className="w-full text-left px-3.5 py-3 rounded-lg border transition-all"
+                style={
+                  isActive
+                    ? { borderColor: '#45C1BF', background: 'rgba(69,193,191,0.07)' }
+                    : { borderColor: 'oklch(0.91 0.004 260)', background: 'transparent' }
+                }
+              >
+                <div className="flex items-center gap-3">
+                  <div
+                    className="w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center"
+                    style={{ borderColor: isActive ? '#45C1BF' : 'oklch(0.7 0.004 260)' }}
+                  >
+                    {isActive && (
+                      <div className="w-1.5 h-1.5 rounded-full" style={{ background: '#45C1BF' }} />
+                    )}
+                  </div>
+                  <div>
+                    <div className="text-sm font-semibold text-foreground">{opt.label}</div>
+                    <div className="text-xs text-muted-foreground mt-0.5">{opt.description}</div>
+                  </div>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
       <SectionGroup title="Production Volume">
         <SliderField
           label="Prints per day"
@@ -119,19 +181,60 @@ export default function BusinessInputs({ inputs, onChange, onBack, onContinue }:
         />
       </SectionGroup>
 
-      <SectionGroup title="Revenue & Pricing">
-        <SliderField
-          label="Selling price per print"
-          tooltip="Your average selling price per DTF transfer. Industry average is $3–$6 for standard transfers."
-          value={inputs.sellingPricePerPrint}
-          min={1}
-          max={15}
-          step={0.25}
-          prefix="$"
-          decimals={2}
-          onChange={(v) => onChange('sellingPricePerPrint', v)}
-        />
-      </SectionGroup>
+      {/* Transfer revenue — hidden in garments-only mode */}
+      {businessModel !== 'garments' && (
+        <SectionGroup title="Revenue & Pricing">
+          <SliderField
+            label="Selling price per print"
+            tooltip="Your average selling price per DTF transfer. Industry average is $3–$6 for standard transfers."
+            value={inputs.sellingPricePerPrint}
+            min={1}
+            max={15}
+            step={0.25}
+            prefix="$"
+            decimals={2}
+            onChange={(v) => onChange('sellingPricePerPrint', v)}
+          />
+        </SectionGroup>
+      )}
+
+      {/* Garment revenue — shown for garments and hybrid */}
+      {businessModel !== 'transfers' && (
+        <SectionGroup title={businessModel === 'hybrid' ? 'Garment Revenue & Pricing' : 'Revenue & Pricing'}>
+          <SliderField
+            label="Selling price per finished shirt"
+            tooltip="Your average selling price per completed garment (blank + pressed transfer)."
+            value={inputs.sellingPricePerShirt ?? 18}
+            min={10}
+            max={50}
+            step={0.5}
+            prefix="$"
+            decimals={2}
+            onChange={(v) => onChange('sellingPricePerShirt', v)}
+          />
+          <SliderField
+            label="Blank garment cost per shirt"
+            tooltip="Your landed cost for a blank shirt before printing. Gildan Softstyle runs ~$3–$5; premium blanks run higher."
+            value={inputs.blankGarmentCostPerShirt ?? 4.5}
+            min={0}
+            max={Math.min(20, Math.max(1, (inputs.sellingPricePerShirt ?? 18) - 1))}
+            step={0.25}
+            prefix="$"
+            decimals={2}
+            onChange={(v) => onChange('blankGarmentCostPerShirt', v)}
+          />
+          <SliderField
+            label="Prints per shirt"
+            tooltip="How many DTF transfers you apply per garment. Most shirts use 1 (front only); front + back = 2."
+            value={inputs.printsPerShirt ?? 1}
+            min={1}
+            max={4}
+            step={1}
+            suffix="prints"
+            onChange={(v) => onChange('printsPerShirt', v)}
+          />
+        </SectionGroup>
+      )}
 
       <SectionGroup title="Consumable Costs">
         <p className="text-xs text-muted-foreground -mt-2">

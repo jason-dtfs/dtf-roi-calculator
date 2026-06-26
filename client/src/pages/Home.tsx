@@ -11,7 +11,7 @@
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import Header from '@/components/Header';
 import EquipmentSelector from '@/components/EquipmentSelector';
-import BusinessInputs from '@/components/BusinessInputs';
+import BusinessInputs, { type BusinessModel } from '@/components/BusinessInputs';
 import FinancingInputs from '@/components/FinancingInputs';
 import ResultsDashboard from '@/components/ResultsDashboard';
 import ComparisonMode from '@/components/ComparisonMode';
@@ -32,16 +32,18 @@ const NUM_KEYS: Array<keyof ROIInputs> = [
   'printsPerDay', 'operatingDaysPerMonth', 'sellingPricePerPrint',
   'filmAndPowderCostPerPrint', 'inkCostPerMonth', 'laborHoursPerDay', 'laborCostPerHour',
   'outsourcingCostPerPrint', 'currentMonthlyOutsourcingVolume',
+  'sellingPricePerShirt', 'blankGarmentCostPerShirt', 'printsPerShirt',
   'downPaymentPercent', 'loanInterestRate', 'loanTermMonths',
 ];
 const STR_KEYS: Array<keyof ROIInputs> = ['printerId', 'shakerId', 'heatPressId'];
 
-function encodeInputsToURL(inputs: ROIInputs): string {
+function encodeInputsToURL(inputs: ROIInputs, businessModel: BusinessModel = 'transfers'): string {
   const params = new URLSearchParams();
   STR_KEYS.forEach(k => params.set(k, inputs[k] as string));
   NUM_KEYS.forEach(k => params.set(k, String(inputs[k])));
   if (inputs.cutterId) params.set('cutterId', inputs.cutterId);
   if (inputs.otherEquipmentIds.length) params.set('otherEquipmentIds', inputs.otherEquipmentIds.join(','));
+  if (businessModel !== 'transfers') params.set('businessModel', businessModel);
   return `${window.location.origin}${window.location.pathname}?${params.toString()}`;
 }
 
@@ -55,7 +57,10 @@ function decodeInputsFromURL(): Partial<ROIInputs> {
   });
   NUM_KEYS.forEach(k => {
     const v = params.get(k);
-    if (v !== null) (partial as Record<string, unknown>)[k] = parseFloat(v);
+    if (v !== null) {
+      const parsed = parseFloat(v);
+      if (!isNaN(parsed)) (partial as Record<string, unknown>)[k] = parsed;
+    }
   });
   const cutterId = params.get('cutterId');
   if (cutterId) partial.cutterId = cutterId;
@@ -80,6 +85,10 @@ export default function Home() {
     ...DEFAULT_INPUTS,
     ...decodeInputsFromURL(),
   }));
+  const [businessModel, setBusinessModel] = useState<BusinessModel>(() => {
+    const val = new URLSearchParams(window.location.search).get('businessModel');
+    return val === 'garments' || val === 'hybrid' ? val : 'transfers';
+  });
   const [activeSection, setActiveSection] = useState<Section>('equipment');
   const [mode, setMode] = useState<Mode>('calculator');
   const [mobileResultsOpen, setMobileResultsOpen] = useState(false);
@@ -88,10 +97,10 @@ export default function Home() {
   // Sync URL
   useEffect(() => {
     if (mode === 'calculator') {
-      const url = encodeInputsToURL(inputs);
+      const url = encodeInputsToURL(inputs, businessModel);
       window.history.replaceState(null, '', url);
     }
-  }, [inputs, mode]);
+  }, [inputs, mode, businessModel]);
 
   const updateInput = useCallback(<K extends keyof ROIInputs>(key: K, value: ROIInputs[K]) => {
     setInputs(prev => ({ ...prev, [key]: value }));
@@ -131,7 +140,7 @@ export default function Home() {
   }, []);
 
   const handleShare = useCallback(() => {
-    const url = encodeInputsToURL(inputs);
+    const url = encodeInputsToURL(inputs, businessModel);
     navigator.clipboard.writeText(url).then(() => {
       toast.success('Link copied!', {
         description: 'Share this URL to pre-fill the calculator with your current configuration.',
@@ -140,9 +149,9 @@ export default function Home() {
     }).catch(() => {
       window.prompt('Copy this link to share your configuration:', url);
     });
-  }, [inputs]);
+  }, [inputs, businessModel]);
 
-  const results = useMemo(() => calculateROI(inputs), [inputs]);
+  const results = useMemo(() => calculateROI(inputs, businessModel), [inputs, businessModel]);
 
   const completedSteps = useMemo(() => {
     const steps: Section[] = [];
@@ -288,6 +297,8 @@ export default function Home() {
                   onChange={updateInput}
                   onBack={() => setActiveSection('equipment')}
                   onContinue={() => setActiveSection('financing')}
+                  businessModel={businessModel}
+                  onBusinessModelChange={setBusinessModel}
                 />
               )}
               {activeSection === 'financing' && (

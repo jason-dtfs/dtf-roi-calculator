@@ -380,7 +380,7 @@ export interface ROIInputs {
   heatPressId: string;
   cutterId: string | null;
   otherEquipmentIds: string[];
-  // Business parameters
+  // Business parameters — transfers
   printsPerDay: number;
   operatingDaysPerMonth: number;
   sellingPricePerPrint: number;
@@ -390,6 +390,10 @@ export interface ROIInputs {
   laborCostPerHour: number;
   outsourcingCostPerPrint: number;
   currentMonthlyOutsourcingVolume: number;
+  // Business parameters — garments
+  sellingPricePerShirt: number;        // selling price per finished garment
+  blankGarmentCostPerShirt: number;    // blank garment cost per shirt
+  printsPerShirt: number;              // DTF transfers applied per shirt
   // Financing
   downPaymentPercent: number;
   loanInterestRate: number;
@@ -428,7 +432,7 @@ export interface ROIResults {
   costBreakdown: Array<{ name: string; value: number; color: string }>;
 }
 
-export function calculateROI(inputs: ROIInputs): ROIResults {
+export function calculateROI(inputs: ROIInputs, businessModel: 'transfers' | 'garments' | 'hybrid' = 'transfers'): ROIResults {
   const printer = PRINTERS.find(p => p.id === inputs.printerId) ?? PRINTERS[1];
   const shaker = SHAKERS.find(s => s.id === inputs.shakerId) ?? SHAKERS[0];
   const heatPress = HEAT_PRESSES.find(h => h.id === inputs.heatPressId) ?? HEAT_PRESSES[0];
@@ -455,17 +459,42 @@ export function calculateROI(inputs: ROIInputs): ROIResults {
   }
 
   const monthlyPrints = inputs.printsPerDay * inputs.operatingDaysPerMonth;
-  const monthlyRevenue = monthlyPrints * inputs.sellingPricePerPrint;
+
+  // Revenue varies by business model
+  const printsPerShirt = (Number.isFinite(inputs.printsPerShirt) && inputs.printsPerShirt >= 1) ? inputs.printsPerShirt : 1;
+  const shirtsPerDay = inputs.printsPerDay / printsPerShirt;
+  const monthlyShirts = shirtsPerDay * inputs.operatingDaysPerMonth;
+
+  let monthlyRevenue: number;
+  let monthlyBlankGarmentCost = 0;
+
+  const sellingPricePerShirt = Number.isFinite(inputs.sellingPricePerShirt) ? inputs.sellingPricePerShirt : 18;
+  const blankGarmentCostPerShirt = Number.isFinite(inputs.blankGarmentCostPerShirt) ? inputs.blankGarmentCostPerShirt : 4.5;
+
+  if (businessModel === 'garments') {
+    monthlyRevenue = monthlyShirts * sellingPricePerShirt;
+    monthlyBlankGarmentCost = monthlyShirts * blankGarmentCostPerShirt;
+  } else if (businessModel === 'hybrid') {
+    monthlyRevenue =
+      monthlyPrints * inputs.sellingPricePerPrint +
+      monthlyShirts * sellingPricePerShirt;
+    monthlyBlankGarmentCost = monthlyShirts * blankGarmentCostPerShirt;
+  } else {
+    monthlyRevenue = monthlyPrints * inputs.sellingPricePerPrint;
+  }
+
   const monthlyFilmPowderCost = monthlyPrints * inputs.filmAndPowderCostPerPrint;
   const monthlyInkCost = inputs.inkCostPerMonth;
-  const monthlyTotalConsumableCost = monthlyFilmPowderCost + monthlyInkCost;
+  const monthlyTotalConsumableCost = monthlyFilmPowderCost + monthlyInkCost + monthlyBlankGarmentCost;
   const monthlyLaborCost = inputs.laborHoursPerDay * inputs.operatingDaysPerMonth * inputs.laborCostPerHour;
   const monthlyGrossProfit = monthlyRevenue - monthlyTotalConsumableCost - monthlyLaborCost;
   const monthlyNetProfit = monthlyGrossProfit - monthlyLoanPayment;
 
   const monthlyOutsourcingSavings =
-    inputs.currentMonthlyOutsourcingVolume *
-    (inputs.outsourcingCostPerPrint - (inputs.filmAndPowderCostPerPrint + (monthlyPrints > 0 ? inputs.inkCostPerMonth / monthlyPrints : 0)));
+    businessModel === 'transfers' || businessModel === 'hybrid'
+      ? inputs.currentMonthlyOutsourcingVolume *
+        (inputs.outsourcingCostPerPrint - (inputs.filmAndPowderCostPerPrint + (monthlyPrints > 0 ? inputs.inkCostPerMonth / monthlyPrints : 0)))
+      : 0;
 
   const annualRevenue = monthlyRevenue * 12;
   const annualNetProfit = monthlyNetProfit * 12;
@@ -499,6 +528,7 @@ export function calculateROI(inputs: ROIInputs): ROIResults {
   const costBreakdown = [
     { name: 'Film & Powder', value: Math.round(monthlyFilmPowderCost), color: '#FF6B4A' },
     { name: 'Ink', value: Math.round(monthlyInkCost), color: '#F59E0B' },
+    ...(monthlyBlankGarmentCost > 0 ? [{ name: 'Blank Garments', value: Math.round(monthlyBlankGarmentCost), color: '#EC4899' }] : []),
     { name: 'Labor', value: Math.round(monthlyLaborCost), color: '#8B5CF6' },
     { name: 'Equipment Pmt', value: Math.round(monthlyLoanPayment), color: '#6B7280' },
     { name: 'Net Profit', value: Math.max(0, Math.round(monthlyNetProfit)), color: '#45C1BF' },
@@ -565,6 +595,9 @@ export const DEFAULT_INPUTS: ROIInputs = {
   laborCostPerHour: 18,
   outsourcingCostPerPrint: 3.50,
   currentMonthlyOutsourcingVolume: 500,
+  sellingPricePerShirt: 18,
+  blankGarmentCostPerShirt: 4.50,
+  printsPerShirt: 1,
   downPaymentPercent: 20,
   loanInterestRate: 7.9,
   loanTermMonths: 36,
