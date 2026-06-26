@@ -10,7 +10,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 
 export type BusinessModel = 'transfers' | 'garments' | 'hybrid';
 
-const BUSINESS_MODEL_OPTIONS: { value: BusinessModel; label: string; description: string }[] = [
+export const BUSINESS_MODEL_OPTIONS: { value: BusinessModel; label: string; description: string }[] = [
   {
     value: 'transfers',
     label: 'Sell Transfers',

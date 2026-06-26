@@ -12,6 +12,7 @@ import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import Header from '@/components/Header';
 import EquipmentSelector from '@/components/EquipmentSelector';
 import BusinessInputs, { type BusinessModel } from '@/components/BusinessInputs';
+import BasicMode from '@/components/BasicMode';
 import FinancingInputs from '@/components/FinancingInputs';
 import ResultsDashboard from '@/components/ResultsDashboard';
 import ComparisonMode from '@/components/ComparisonMode';
@@ -37,13 +38,14 @@ const NUM_KEYS: Array<keyof ROIInputs> = [
 ];
 const STR_KEYS: Array<keyof ROIInputs> = ['printerId', 'shakerId', 'heatPressId'];
 
-function encodeInputsToURL(inputs: ROIInputs, businessModel: BusinessModel = 'transfers'): string {
+function encodeInputsToURL(inputs: ROIInputs, businessModel: BusinessModel = 'transfers', uiMode: UIMode = 'advanced'): string {
   const params = new URLSearchParams();
   STR_KEYS.forEach(k => params.set(k, inputs[k] as string));
   NUM_KEYS.forEach(k => params.set(k, String(inputs[k])));
   if (inputs.cutterId) params.set('cutterId', inputs.cutterId);
   if (inputs.otherEquipmentIds.length) params.set('otherEquipmentIds', inputs.otherEquipmentIds.join(','));
   if (businessModel !== 'transfers') params.set('businessModel', businessModel);
+  if (uiMode !== 'advanced') params.set('mode', uiMode);
   return `${window.location.origin}${window.location.pathname}?${params.toString()}`;
 }
 
@@ -73,6 +75,7 @@ function decodeInputsFromURL(): Partial<ROIInputs> {
 
 type Section = 'equipment' | 'business' | 'financing';
 type Mode = 'calculator' | 'comparison';
+type UIMode = 'basic' | 'advanced';
 
 const STEPS: { id: Section; label: string; num: number }[] = [
   { id: 'equipment', label: 'Equipment', num: 1 },
@@ -89,6 +92,10 @@ export default function Home() {
     const val = new URLSearchParams(window.location.search).get('businessModel');
     return val === 'garments' || val === 'hybrid' ? val : 'transfers';
   });
+  const [uiMode, setUIMode] = useState<UIMode>(() => {
+    const val = new URLSearchParams(window.location.search).get('mode');
+    return val === 'basic' ? 'basic' : 'advanced';
+  });
   const [activeSection, setActiveSection] = useState<Section>('equipment');
   const [mode, setMode] = useState<Mode>('calculator');
   const [mobileResultsOpen, setMobileResultsOpen] = useState(false);
@@ -97,10 +104,10 @@ export default function Home() {
   // Sync URL
   useEffect(() => {
     if (mode === 'calculator') {
-      const url = encodeInputsToURL(inputs, businessModel);
+      const url = encodeInputsToURL(inputs, businessModel, uiMode);
       window.history.replaceState(null, '', url);
     }
-  }, [inputs, mode, businessModel]);
+  }, [inputs, mode, businessModel, uiMode]);
 
   const updateInput = useCallback(<K extends keyof ROIInputs>(key: K, value: ROIInputs[K]) => {
     setInputs(prev => ({ ...prev, [key]: value }));
@@ -140,7 +147,7 @@ export default function Home() {
   }, []);
 
   const handleShare = useCallback(() => {
-    const url = encodeInputsToURL(inputs, businessModel);
+    const url = encodeInputsToURL(inputs, businessModel, uiMode);
     navigator.clipboard.writeText(url).then(() => {
       toast.success('Link copied!', {
         description: 'Share this URL to pre-fill the calculator with your current configuration.',
@@ -149,7 +156,7 @@ export default function Home() {
     }).catch(() => {
       window.prompt('Copy this link to share your configuration:', url);
     });
-  }, [inputs, businessModel]);
+  }, [inputs, businessModel, uiMode]);
 
   const results = useMemo(() => calculateROI(inputs, businessModel), [inputs, businessModel]);
 
@@ -232,115 +239,172 @@ export default function Home() {
         {mode === 'comparison' ? (
           <ComparisonMode />
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-[440px_1fr] gap-6 lg:gap-8 items-start">
+          <div className="space-y-5">
 
-            {/* LEFT — Inputs */}
-            <div className="space-y-4">
-              {/* Step tabs */}
-              <div className="flex rounded-lg border border-border bg-white overflow-hidden">
-                {STEPS.map((step, i) => {
-                  const isActive = activeSection === step.id;
-                  const isDone = completedSteps.includes(step.id);
-                  return (
-                    <button
-                      key={step.id}
-                      onClick={() => setActiveSection(step.id)}
-                      className={`flex-1 flex items-center justify-center gap-1.5 sm:gap-2 py-2.5 text-xs sm:text-sm font-medium transition-colors ${
-                        i > 0 ? 'border-l border-border' : ''
-                      } ${
-                        !isActive && !isDone ? 'text-muted-foreground hover:text-foreground hover:bg-muted/40' : ''
-                      }`}
-                      style={
-                        isActive
-                          ? { background: '#45C1BF', color: '#0d3534' }
-                          : isDone
-                          ? { color: '#45C1BF' }
-                          : {}
-                      }
-                    >
-                      <span
-                        className={`w-4 h-4 sm:w-5 sm:h-5 rounded-full text-xs font-semibold flex items-center justify-center shrink-0 ${
-                          !isActive && !isDone ? 'bg-muted text-muted-foreground' : ''
-                        }`}
-                        style={
-                          isActive
-                            ? { background: 'rgba(0,0,0,0.1)', color: '#0d3534' }
-                            : isDone
-                            ? { background: 'rgba(69,193,191,0.12)', color: '#45C1BF' }
-                            : {}
-                        }
-                      >
-                        {isDone ? '✓' : step.num}
-                      </span>
-                      {step.label}
-                    </button>
-                  );
-                })}
-              </div>
-
-              {/* Step content */}
-              {activeSection === 'equipment' && (
-                <EquipmentSelector
-                  inputs={inputs}
-                  onPrinterChange={handlePrinterChange}
-                  onShakerChange={(id: string) => updateInput('shakerId', id)}
-                  onHeatPressChange={(id: string) => updateInput('heatPressId', id)}
-                  onCutterChange={(id) => updateInput('cutterId', id)}
-                  onOtherEquipmentChange={(ids) => updateInput('otherEquipmentIds', ids)}
-                  onBundleSelect={handleBundleSelect}
-                  onContinue={() => setActiveSection('business')}
-                />
-              )}
-              {activeSection === 'business' && (
-                <BusinessInputs
-                  inputs={inputs}
-                  onChange={updateInput}
-                  onBack={() => setActiveSection('equipment')}
-                  onContinue={() => setActiveSection('financing')}
-                  businessModel={businessModel}
-                  onBusinessModelChange={setBusinessModel}
-                />
-              )}
-              {activeSection === 'financing' && (
-                <FinancingInputs
-                  inputs={inputs}
-                  results={results}
-                  onChange={updateInput}
-                  onBack={() => setActiveSection('business')}
-                />
-              )}
-
-              {/* Mobile: "View Results" sticky button */}
-              <div className="lg:hidden">
+            {/* Basic / Advanced mode toggle */}
+            <div className="space-y-1.5">
+              <div className="flex rounded-lg border border-border bg-white overflow-hidden w-fit">
                 <button
-                  onClick={scrollToResults}
-                  className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold transition-opacity hover:opacity-90"
-                  style={{ background: '#45C1BF', color: '#0d3534' }}
+                  onClick={() => setUIMode('basic')}
+                  className={`flex items-center gap-1.5 px-5 py-2.5 text-sm font-medium transition-colors ${
+                    uiMode !== 'basic' ? 'text-muted-foreground hover:text-foreground hover:bg-muted/40' : ''
+                  }`}
+                  style={uiMode === 'basic' ? { background: '#45C1BF', color: '#0d3534' } : {}}
                 >
-                  <ChevronUp className="w-4 h-4" />
-                  View ROI Results
+                  Basic
+                </button>
+                <button
+                  onClick={() => setUIMode('advanced')}
+                  className={`flex items-center gap-1.5 px-5 py-2.5 text-sm font-medium transition-colors border-l border-border ${
+                    uiMode !== 'advanced' ? 'text-muted-foreground hover:text-foreground hover:bg-muted/40' : ''
+                  }`}
+                  style={uiMode === 'advanced' ? { background: '#45C1BF', color: '#0d3534' } : {}}
+                >
+                  Advanced
                 </button>
               </div>
+              <p className="text-xs text-muted-foreground">
+                {uiMode === 'basic'
+                  ? 'Estimate your monthly profit in under a minute — no experience needed.'
+                  : 'Fine-tune every input for a precise break-even and ROI projection.'}
+              </p>
             </div>
 
-            {/* RIGHT — Live Results */}
-            <div ref={resultsRef} className="lg:sticky lg:top-[72px]">
-              {/* On mobile, show a collapsed summary that expands */}
-              <div className="lg:hidden mb-2">
-                <button
-                  onClick={() => setMobileResultsOpen(o => !o)}
-                  className="w-full flex items-center justify-between px-4 py-3 rounded-xl border border-border bg-white text-sm font-semibold text-foreground"
-                >
-                  <span>ROI Results — {results.monthlyNetProfit > 0 ? `$${Math.round(results.monthlyNetProfit / 1000 * 10) / 10}K/mo profit` : 'Configure above'}</span>
-                  <ChevronUp
-                    className="w-4 h-4 text-muted-foreground transition-transform"
-                    style={{ transform: mobileResultsOpen ? 'rotate(0deg)' : 'rotate(180deg)' }}
-                  />
-                </button>
+            <div className="grid grid-cols-1 lg:grid-cols-[440px_1fr] gap-6 lg:gap-8 items-start">
+
+              {/* LEFT — Inputs */}
+              <div className="space-y-4">
+                {uiMode === 'basic' ? (
+                  <>
+                    <BasicMode
+                      inputs={inputs}
+                      businessModel={businessModel}
+                      onBusinessModelChange={setBusinessModel}
+                      onPrinterChange={handlePrinterChange}
+                      onBundleSelect={handleBundleSelect}
+                      onChange={updateInput}
+                    />
+                    <div className="lg:hidden">
+                      <button
+                        onClick={scrollToResults}
+                        className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold transition-opacity hover:opacity-90"
+                        style={{ background: '#45C1BF', color: '#0d3534' }}
+                      >
+                        <ChevronUp className="w-4 h-4" />
+                        View ROI Results
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    {/* Step tabs */}
+                    <div className="flex rounded-lg border border-border bg-white overflow-hidden">
+                      {STEPS.map((step, i) => {
+                        const isActive = activeSection === step.id;
+                        const isDone = completedSteps.includes(step.id);
+                        return (
+                          <button
+                            key={step.id}
+                            onClick={() => setActiveSection(step.id)}
+                            className={`flex-1 flex items-center justify-center gap-1.5 sm:gap-2 py-2.5 text-xs sm:text-sm font-medium transition-colors ${
+                              i > 0 ? 'border-l border-border' : ''
+                            } ${
+                              !isActive && !isDone ? 'text-muted-foreground hover:text-foreground hover:bg-muted/40' : ''
+                            }`}
+                            style={
+                              isActive
+                                ? { background: '#45C1BF', color: '#0d3534' }
+                                : isDone
+                                ? { color: '#45C1BF' }
+                                : {}
+                            }
+                          >
+                            <span
+                              className={`w-4 h-4 sm:w-5 sm:h-5 rounded-full text-xs font-semibold flex items-center justify-center shrink-0 ${
+                                !isActive && !isDone ? 'bg-muted text-muted-foreground' : ''
+                              }`}
+                              style={
+                                isActive
+                                  ? { background: 'rgba(0,0,0,0.1)', color: '#0d3534' }
+                                  : isDone
+                                  ? { background: 'rgba(69,193,191,0.12)', color: '#45C1BF' }
+                                  : {}
+                              }
+                            >
+                              {isDone ? '✓' : step.num}
+                            </span>
+                            {step.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {/* Step content */}
+                    {activeSection === 'equipment' && (
+                      <EquipmentSelector
+                        inputs={inputs}
+                        onPrinterChange={handlePrinterChange}
+                        onShakerChange={(id: string) => updateInput('shakerId', id)}
+                        onHeatPressChange={(id: string) => updateInput('heatPressId', id)}
+                        onCutterChange={(id) => updateInput('cutterId', id)}
+                        onOtherEquipmentChange={(ids) => updateInput('otherEquipmentIds', ids)}
+                        onBundleSelect={handleBundleSelect}
+                        onContinue={() => setActiveSection('business')}
+                      />
+                    )}
+                    {activeSection === 'business' && (
+                      <BusinessInputs
+                        inputs={inputs}
+                        onChange={updateInput}
+                        onBack={() => setActiveSection('equipment')}
+                        onContinue={() => setActiveSection('financing')}
+                        businessModel={businessModel}
+                        onBusinessModelChange={setBusinessModel}
+                      />
+                    )}
+                    {activeSection === 'financing' && (
+                      <FinancingInputs
+                        inputs={inputs}
+                        results={results}
+                        onChange={updateInput}
+                        onBack={() => setActiveSection('business')}
+                      />
+                    )}
+
+                    {/* Mobile: "View Results" sticky button */}
+                    <div className="lg:hidden">
+                      <button
+                        onClick={scrollToResults}
+                        className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold transition-opacity hover:opacity-90"
+                        style={{ background: '#45C1BF', color: '#0d3534' }}
+                      >
+                        <ChevronUp className="w-4 h-4" />
+                        View ROI Results
+                      </button>
+                    </div>
+                  </>
+                )}
               </div>
 
-              <div className={`${mobileResultsOpen ? 'block' : 'hidden'} lg:block`}>
-                <ResultsDashboard results={results} inputs={inputs} onShare={handleShare} />
+              {/* RIGHT — Live Results */}
+              <div ref={resultsRef} className="lg:sticky lg:top-[72px]">
+                {/* On mobile, show a collapsed summary that expands */}
+                <div className="lg:hidden mb-2">
+                  <button
+                    onClick={() => setMobileResultsOpen(o => !o)}
+                    className="w-full flex items-center justify-between px-4 py-3 rounded-xl border border-border bg-white text-sm font-semibold text-foreground"
+                  >
+                    <span>ROI Results — {results.monthlyNetProfit > 0 ? `$${Math.round(results.monthlyNetProfit / 1000 * 10) / 10}K/mo profit` : 'Configure above'}</span>
+                    <ChevronUp
+                      className="w-4 h-4 text-muted-foreground transition-transform"
+                      style={{ transform: mobileResultsOpen ? 'rotate(0deg)' : 'rotate(180deg)' }}
+                    />
+                  </button>
+                </div>
+
+                <div className={`${mobileResultsOpen ? 'block' : 'hidden'} lg:block`}>
+                  <ResultsDashboard results={results} inputs={inputs} onShare={handleShare} />
+                </div>
               </div>
             </div>
           </div>
