@@ -7,6 +7,7 @@
 import { useState, useCallback, useMemo } from 'react';
 import {
   calculateROI,
+  getPrinterShakerTotal,
   PRINTERS,
   SHAKERS,
   HEAT_PRESSES,
@@ -54,6 +55,78 @@ function applyBundle(bundleId: string): ROIInputs {
   };
 }
 
+// ─── Machine images ───────────────────────────────────────────────────────────
+
+const MACHINE_IMAGES: Record<string, string> = {
+  'r1:miro13':          'r1-miro13max.png',
+  'r2pro:miro13':       'r2pro-miro13max.png',
+  'xl2:miro24':         'xl2-miro24.webp',
+  'xl2:seismoL24R':     'xl2-l24r.png',
+  'xl2pro:miro24':      'xl2pro-miro24.png',
+  'xl2pro:seismoL24R':  'xl2pro-seismol24r.webp',
+  'xl3:miro24':         'xl3-miro24.webp',
+  'xl3:seismoL24R':     'xl3-seismol24r.png',
+  'xl4:seismoL24R':     'xl4-l24r.png',
+  'x6:seismoV36R':      'x6-seismov36r.png',
+};
+
+const MACHINE_FALLBACK: Record<string, string> = {
+  r1:    'r1-miro13max.png',
+  r2pro: 'r2pro-miro13max.png',
+  xl4:   'xl4-l24r.png',
+  x6:    'x6-seismov36r.png',
+};
+
+const HEAT_PRESS_IMAGES: Record<string, string> = {
+  prismaAuto:  'prisma-auto.png',
+  prismaDual:  'prisma-dual.png',
+};
+
+function getMachineImageSrc(printerId: string, shakerId: string): string | null {
+  const combo = MACHINE_IMAGES[`${printerId}:${shakerId}`];
+  if (combo) return `/machines/${combo}`;
+  const fallback = MACHINE_FALLBACK[printerId];
+  if (fallback) return `/machines/${fallback}`;
+  return null;
+}
+
+function MachineHeroImage({ printerId, shakerId, alt }: { printerId: string; shakerId: string; alt: string }) {
+  const [failed, setFailed] = useState(false);
+  const src = getMachineImageSrc(printerId, shakerId);
+
+  if (!src || failed) {
+    return (
+      <div className="w-full h-full flex items-center justify-center bg-muted/40 rounded-t-xl">
+        <span className="text-xs text-muted-foreground font-medium">{alt}</span>
+      </div>
+    );
+  }
+
+  return (
+    <img
+      src={src}
+      alt={alt}
+      onError={() => setFailed(true)}
+      className="w-full h-full object-contain p-3"
+    />
+  );
+}
+
+function HeatPressThumb({ heatPressId }: { heatPressId: string }) {
+  const [failed, setFailed] = useState(false);
+  const file = HEAT_PRESS_IMAGES[heatPressId];
+  if (!file || failed) return null;
+
+  return (
+    <img
+      src={`/machines/${file}`}
+      alt=""
+      onError={() => setFailed(true)}
+      className="absolute bottom-2 right-2 w-12 h-12 object-contain opacity-80"
+    />
+  );
+}
+
 // ─── Mini equipment selector ──────────────────────────────────────────────────
 
 interface MiniSelectorProps {
@@ -86,13 +159,24 @@ function MiniSelector({ inputs, label, color, onChange }: MiniSelectorProps) {
   };
 
   const totalCost =
-    (printer?.basePrice ?? 0) +
-    (shaker?.basePrice ?? 0) +
+    (printer && shaker ? getPrinterShakerTotal(printer, shaker) : 0) +
     (heatPress?.basePrice ?? 0) +
     (cutter?.basePrice ?? 0);
 
   return (
     <div className="border border-border rounded-xl overflow-hidden">
+      {/* Machine hero image */}
+      <div className="relative h-40 bg-muted/30">
+        <MachineHeroImage
+          printerId={inputs.printerId}
+          shakerId={inputs.shakerId}
+          alt={printer ? `${printer.name}${shaker ? ` + ${shaker.name}` : ''}` : 'Machine'}
+        />
+        {heatPress && heatPress.id !== 'none' && (
+          <HeatPressThumb heatPressId={heatPress.id} />
+        )}
+      </div>
+
       {/* Header */}
       <div
         className="flex items-center justify-between px-4 py-3 cursor-pointer select-none"

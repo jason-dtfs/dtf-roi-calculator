@@ -19,6 +19,8 @@ export interface PrinterModel {
   dailyOutputDefault: number;
   speedSqFtHr: number;
   basePrice: number;
+  /** Bundle prices (printer + specific shaker). When present, used instead of basePrice + shaker.basePrice. */
+  shakerBundlePrices?: Record<string, number>;
   description: string;
   features: string[];
   recommendedShaker: string;
@@ -61,23 +63,6 @@ export const PRINTERS: PrinterModel[] = [
     inkCostPreset: 250,
   },
   {
-    id: 'l2',
-    name: 'Prestige L2',
-    series: 'Prestige',
-    sku: 'PRESTIGE-L2',
-    tier: 'intermediate',
-    printWidth: '16"',
-    dailyOutputMin: 400,
-    dailyOutputMax: 500,
-    dailyOutputDefault: 450,
-    speedSqFtHr: 70,
-    basePrice: 11995,
-    description: '16" system for businesses scaling beyond desktop units without a full 24" footprint.',
-    features: ['Dual Epson i3200 heads', '17.72" max print width', 'Fully automated printing', '70 sq ft/hr'],
-    recommendedShaker: 'miro16',
-    inkCostPreset: 500,
-  },
-  {
     id: 'xl2',
     name: 'Prestige XL2',
     series: 'Prestige XL',
@@ -93,6 +78,24 @@ export const PRINTERS: PrinterModel[] = [
     features: ['Dual Epson i3200 heads', '24" print width', '82.9 sq ft/hr', '510–660 pcs/day'],
     recommendedShaker: 'miro24',
     inkCostPreset: 700,
+  },
+  {
+    id: 'xl2pro',
+    name: 'Prestige XL2 Pro',
+    series: 'Prestige XL',
+    sku: 'PRESTIGE-XL2PRO',
+    tier: 'advanced',
+    printWidth: '24"',
+    dailyOutputMin: 350,
+    dailyOutputMax: 500,
+    dailyOutputDefault: 425,
+    speedSqFtHr: 90,
+    basePrice: 21256,
+    shakerBundlePrices: { miro24: 26251, seismoL24R: 29805 },
+    description: '24" professional printer with enhanced speed and dual i3200 heads for growing production shops.',
+    features: ['Dual Epson i3200 heads', '24" print width', 'Enhanced automation', '350–500 pcs/day'],
+    recommendedShaker: 'miro24',
+    inkCostPreset: 800,
   },
   {
     id: 'xl3',
@@ -220,13 +223,13 @@ export const SHAKERS: ShakerModel[] = [
 // Maps printer ID → array of compatible shaker IDs (in display order)
 
 export const PRINTER_SHAKER_COMPAT: Record<string, string[]> = {
-  r1:    ['miro13'],
-  r2pro: ['miro13'],
-  l2:    ['miro16', 'miro24', 'seismoL16R'],
-  xl2:   ['miro24', 'seismoL24R'],
-  xl3:   ['miro24', 'seismoL24R'],
-  xl4:   ['seismoL24R'],
-  x6:    ['seismoV36R'],
+  r1:     ['miro13'],
+  r2pro:  ['miro13'],
+  xl2:    ['miro24', 'seismoL24R'],
+  xl2pro: ['miro24', 'seismoL24R'],
+  xl3:    ['miro24', 'seismoL24R'],
+  xl4:    ['seismoL24R'],
+  x6:     ['seismoV36R'],
 };
 
 // ─── Heat Press ───────────────────────────────────────────────────────────────
@@ -255,7 +258,7 @@ export const HEAT_PRESSES: HeatPressModel[] = [
     sku: 'PRISMA-DUAL',
     basePrice: 7900,
     description: 'Dual-platen industrial heat press for XL2 and above — maximises throughput.',
-    printerRestriction: ['xl2', 'xl3', 'xl4', 'x6'],
+    printerRestriction: ['xl2', 'xl2pro', 'xl3', 'xl4', 'x6'],
   },
   {
     id: 'none',
@@ -284,7 +287,7 @@ export const CUTTERS: CutterModel[] = [
     sku: 'ARC-127',
     basePrice: 13445,
     description: 'Precision DTF film cutter for 24" production systems.',
-    compatiblePrinters: ['xl2', 'xl3', 'xl4'],
+    compatiblePrinters: ['xl2', 'xl2pro', 'xl3', 'xl4'],
   },
   {
     id: 'arc136',
@@ -432,6 +435,14 @@ export interface ROIResults {
   costBreakdown: Array<{ name: string; value: number; color: string }>;
 }
 
+/** Returns the combined printer + shaker price, using bundle pricing when available. */
+export function getPrinterShakerTotal(printer: PrinterModel, shaker: ShakerModel): number {
+  if (printer.shakerBundlePrices?.[shaker.id] !== undefined) {
+    return printer.shakerBundlePrices[shaker.id];
+  }
+  return printer.basePrice + shaker.basePrice;
+}
+
 export function calculateROI(inputs: ROIInputs, businessModel: 'transfers' | 'garments' | 'hybrid' = 'transfers'): ROIResults {
   const printer = PRINTERS.find(p => p.id === inputs.printerId) ?? PRINTERS[1];
   const shaker = SHAKERS.find(s => s.id === inputs.shakerId) ?? SHAKERS[0];
@@ -441,7 +452,7 @@ export function calculateROI(inputs: ROIInputs, businessModel: 'transfers' | 'ga
 
   const cutterCost = cutter?.basePrice ?? 0;
   const otherCost = otherItems.reduce((sum, e) => sum + (e?.basePrice ?? 0), 0);
-  const totalEquipmentCost = printer.basePrice + shaker.basePrice + heatPress.basePrice + cutterCost + otherCost;
+  const totalEquipmentCost = getPrinterShakerTotal(printer, shaker) + heatPress.basePrice + cutterCost + otherCost;
 
   const downPayment = totalEquipmentCost * (inputs.downPaymentPercent / 100);
   const loanAmount = totalEquipmentCost - downPayment;
