@@ -60,11 +60,11 @@ function applyBundle(bundleId: string): ROIInputs {
 const MACHINE_IMAGES: Record<string, string> = {
   'r1:miro13':          'r1-miro13max.png',
   'r2pro:miro13':       'r2pro-miro13max.png',
-  'xl2:miro24':         'xl2-miro24.webp',
+  'xl2:miro24':         'xl2-miro24.png',
   'xl2:seismoL24R':     'xl2-l24r.png',
   'xl2pro:miro24':      'xl2pro-miro24.png',
-  'xl2pro:seismoL24R':  'xl2pro-seismol24r.webp',
-  'xl3:miro24':         'xl3-miro24.webp',
+  'xl2pro:seismoL24R':  'xl2pro-seismol24r.png',
+  'xl3:miro24':         'xl3-miro24.png',
   'xl3:seismoL24R':     'xl3-seismol24r.png',
   'xl4:seismoL24R':     'xl4-l24r.png',
   'x6:seismoV36R':      'x6-seismov36r.png',
@@ -96,19 +96,21 @@ function MachineHeroImage({ printerId, shakerId, alt }: { printerId: string; sha
 
   if (!src || failed) {
     return (
-      <div className="w-full h-full flex items-center justify-center bg-muted/40 rounded-t-xl">
+      <div className="w-full h-full flex items-center justify-center" style={{ borderRadius: '12px 12px 0 0' }}>
         <span className="text-xs text-muted-foreground font-medium">{alt}</span>
       </div>
     );
   }
 
   return (
-    <img
-      src={src}
-      alt={alt}
-      onError={() => setFailed(true)}
-      className="w-full h-full object-contain p-3"
-    />
+    <div style={{ width: '100%', height: '100%', padding: '10px', boxSizing: 'border-box' }}>
+      <img
+        src={src}
+        alt={alt}
+        onError={() => setFailed(true)}
+        style={{ width: '100%', height: '100%', objectFit: 'contain', objectPosition: 'center', display: 'block' }}
+      />
+    </div>
   );
 }
 
@@ -118,12 +120,17 @@ function HeatPressThumb({ heatPressId }: { heatPressId: string }) {
   if (!file || failed) return null;
 
   return (
-    <img
-      src={`/machines/${file}`}
-      alt=""
-      onError={() => setFailed(true)}
-      className="absolute bottom-2 right-2 w-12 h-12 object-contain opacity-80"
-    />
+    <div
+      className="absolute"
+      style={{ bottom: '10px', right: '10px', width: '110px', height: '110px', borderRadius: '12px', background: 'white', boxShadow: '0 2px 8px rgba(0,0,0,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '8px' }}
+    >
+      <img
+        src={`/machines/${file}`}
+        alt=""
+        onError={() => setFailed(true)}
+        style={{ width: '100%', height: '100%', objectFit: 'contain', objectPosition: 'center' }}
+      />
+    </div>
   );
 }
 
@@ -166,7 +173,7 @@ function MiniSelector({ inputs, label, color, onChange }: MiniSelectorProps) {
   return (
     <div className="border border-border rounded-xl overflow-hidden">
       {/* Machine hero image */}
-      <div className="relative h-40 bg-muted/30">
+      <div className="relative" style={{ height: '200px', background: '#f5f5f5' }}>
         <MachineHeroImage
           printerId={inputs.printerId}
           shakerId={inputs.shakerId}
