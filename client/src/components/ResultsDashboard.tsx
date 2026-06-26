@@ -127,7 +127,7 @@ const ASSUMPTIONS: AssumptionItem[] = [
   },
   {
     title: 'Labor Costs',
-    content: 'Monthly Labor Cost = Labor Hours Per Day × Operating Days Per Month × Hourly Labor Rate. This reflects the operator time required to load film, monitor print quality, and manage the shaker/curing unit.',
+    content: 'Monthly Labor Cost = Units Produced × Labor Rate Per Unit. For transfers: 5 prints/minute → rate = hourly wage ÷ 300. For finished garments: 1 shirt/minute → rate = hourly wage ÷ 60. Hybrid splits the volume 50/50 and applies both rates. Adjust the hourly labor rate in the fine-tune section.',
   },
   {
     title: 'Equipment Payment',

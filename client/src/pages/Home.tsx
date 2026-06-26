@@ -21,6 +21,7 @@ import {
   PRINTERS,
   BUNDLE_PRESETS,
   PRINTER_SHAKER_COMPAT,
+  BASIC_VOLUME_STEPS,
   DEFAULT_INPUTS,
   type ROIInputs,
 } from '@/lib/roiData';
@@ -38,7 +39,12 @@ const NUM_KEYS: Array<keyof ROIInputs> = [
 ];
 const STR_KEYS: Array<keyof ROIInputs> = ['printerId', 'shakerId', 'heatPressId'];
 
-function encodeInputsToURL(inputs: ROIInputs, businessModel: BusinessModel = 'transfers', uiMode: UIMode = 'advanced', basicModePreset: number | null = null): string {
+function encodeInputsToURL(
+  inputs: ROIInputs,
+  businessModel: BusinessModel = 'transfers',
+  uiMode: UIMode = 'advanced',
+  vol: number | null = null,
+): string {
   const params = new URLSearchParams();
   STR_KEYS.forEach(k => params.set(k, inputs[k] as string));
   NUM_KEYS.forEach(k => params.set(k, String(inputs[k])));
@@ -46,7 +52,7 @@ function encodeInputsToURL(inputs: ROIInputs, businessModel: BusinessModel = 'tr
   if (inputs.otherEquipmentIds.length) params.set('otherEquipmentIds', inputs.otherEquipmentIds.join(','));
   if (businessModel !== 'transfers') params.set('businessModel', businessModel);
   if (uiMode !== 'advanced') params.set('mode', uiMode);
-  if (basicModePreset !== null) params.set('preset', String(basicModePreset));
+  if (vol !== null) params.set('vol', String(vol));
   return `${window.location.origin}${window.location.pathname}?${params.toString()}`;
 }
 
@@ -70,6 +76,44 @@ function decodeInputsFromURL(): Partial<ROIInputs> {
   const otherRaw = params.get('otherEquipmentIds');
   if (otherRaw) partial.otherEquipmentIds = otherRaw.split(',').filter(Boolean);
   return partial;
+}
+
+// ─── Break-even helpers (called on printer/bundle/model switch only) ──────────
+
+function computeBreakEvenVolume(inputs: ROIInputs, businessModel: BusinessModel): number {
+  const { monthlyLoanPayment } = calculateROI({ ...inputs, printsPerDay: 0 }, businessModel);
+  const fixedCost = monthlyLoanPayment + inputs.inkCostPerMonth;
+
+  const printsPerShirt = (Number.isFinite(inputs.printsPerShirt) && inputs.printsPerShirt >= 1)
+    ? inputs.printsPerShirt : 1;
+  const sellingPricePerShirt = Number.isFinite(inputs.sellingPricePerShirt) ? inputs.sellingPricePerShirt : 16;
+  const blankGarmentCostPerShirt = Number.isFinite(inputs.blankGarmentCostPerShirt) ? inputs.blankGarmentCostPerShirt : 4.5;
+  const laborPerTransfer = inputs.laborCostPerHour / 300;
+  const laborPerShirt = inputs.laborCostPerHour / 60;
+
+  let marginPerUnit: number;
+  if (businessModel === 'garments') {
+    marginPerUnit = sellingPricePerShirt
+      - blankGarmentCostPerShirt
+      - inputs.filmAndPowderCostPerPrint * printsPerShirt
+      - laborPerShirt;
+  } else if (businessModel === 'hybrid') {
+    const revenuePerPrint = 0.5 * inputs.sellingPricePerPrint + (0.5 / printsPerShirt) * sellingPricePerShirt;
+    const costsPerPrint = inputs.filmAndPowderCostPerPrint
+      + (0.5 / printsPerShirt) * blankGarmentCostPerShirt
+      + 0.5 * laborPerTransfer
+      + (0.5 / printsPerShirt) * laborPerShirt;
+    marginPerUnit = revenuePerPrint - costsPerPrint;
+  } else {
+    marginPerUnit = inputs.sellingPricePerPrint - inputs.filmAndPowderCostPerPrint - laborPerTransfer;
+  }
+
+  if (marginPerUnit <= 0) return 99999;
+  return Math.ceil(fixedCost / marginPerUnit);
+}
+
+function defaultVolumeStep(breakEven: number): number {
+  return BASIC_VOLUME_STEPS.find(v => v >= breakEven) ?? BASIC_VOLUME_STEPS[BASIC_VOLUME_STEPS.length - 1];
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -97,83 +141,33 @@ export default function Home() {
     const val = new URLSearchParams(window.location.search).get('mode');
     return val === 'basic' ? 'basic' : 'advanced';
   });
-  const [basicModePreset, setBasicModePreset] = useState<number | null>(() => {
-    const val = new URLSearchParams(window.location.search).get('preset');
-    const n = val ? parseInt(val, 10) : null;
-    return (n === 200 || n === 500 || n === 1000 || n === 2500) ? n : null;
+  const [basicModeVolume, setBasicModeVolume] = useState<number>(() => {
+    const params = new URLSearchParams(window.location.search);
+    const volStr = params.get('vol');
+    if (volStr) {
+      const parsed = parseInt(volStr, 10);
+      if (!isNaN(parsed) && parsed > 0) return parsed;
+    }
+    const initInputs: ROIInputs = { ...DEFAULT_INPUTS, ...decodeInputsFromURL() };
+    const initBM: BusinessModel = (() => {
+      const v = params.get('businessModel');
+      return v === 'garments' || v === 'hybrid' ? v : 'transfers';
+    })();
+    return defaultVolumeStep(computeBreakEvenVolume(initInputs, initBM));
+  });
+  const [breakEvenMonthlyVolume, setBreakEvenMonthlyVolume] = useState<number>(() => {
+    const params = new URLSearchParams(window.location.search);
+    const initInputs: ROIInputs = { ...DEFAULT_INPUTS, ...decodeInputsFromURL() };
+    const initBM: BusinessModel = (() => {
+      const v = params.get('businessModel');
+      return v === 'garments' || v === 'hybrid' ? v : 'transfers';
+    })();
+    return computeBreakEvenVolume(initInputs, initBM);
   });
   const [activeSection, setActiveSection] = useState<Section>('equipment');
   const [mode, setMode] = useState<Mode>('calculator');
   const [mobileResultsOpen, setMobileResultsOpen] = useState(false);
   const resultsRef = useRef<HTMLDivElement>(null);
-
-  // Sync URL
-  useEffect(() => {
-    if (mode === 'calculator') {
-      const url = encodeInputsToURL(inputs, businessModel, uiMode, basicModePreset);
-      window.history.replaceState(null, '', url);
-    }
-  }, [inputs, mode, businessModel, uiMode, basicModePreset]);
-
-  const updateInput = useCallback(<K extends keyof ROIInputs>(key: K, value: ROIInputs[K]) => {
-    setInputs(prev => ({ ...prev, [key]: value }));
-  }, []);
-
-  // When printer changes: auto-select first compatible shaker, reset cutter/other equipment, auto-fill ink cost
-  const handlePrinterChange = useCallback((id: string) => {
-    const printer = PRINTERS.find(p => p.id === id);
-    const compatibleIds = PRINTER_SHAKER_COMPAT[id] ?? [];
-    const defaultShaker = compatibleIds[0] ?? printer?.recommendedShaker ?? '';
-    setInputs(prev => ({
-      ...prev,
-      printerId: id,
-      shakerId: defaultShaker,
-      printsPerDay: basicModePreset !== null
-        ? Math.round(basicModePreset / 22)
-        : (printer?.dailyOutputDefault ?? prev.printsPerDay),
-      inkCostPerMonth: printer?.inkCostPreset ?? prev.inkCostPerMonth,
-      cutterId: null,
-      otherEquipmentIds: [],
-    }));
-  }, [basicModePreset]);
-
-  // Bundle preset handler
-  const handleBundleSelect = useCallback((bundleId: string) => {
-    const bundle = BUNDLE_PRESETS.find(b => b.id === bundleId);
-    if (!bundle) return;
-    const printer = PRINTERS.find(p => p.id === bundle.printerId);
-    setBasicModePreset(null);
-    setInputs(prev => ({
-      ...prev,
-      printerId: bundle.printerId,
-      shakerId: bundle.shakerId,
-      heatPressId: bundle.heatPressId,
-      cutterId: bundle.cutterId,
-      otherEquipmentIds: bundle.otherEquipmentIds,
-      printsPerDay: printer?.dailyOutputDefault ?? prev.printsPerDay,
-      inkCostPerMonth: printer?.inkCostPreset ?? prev.inkCostPerMonth,
-    }));
-  }, []);
-
-  const handleBusinessModelChange = useCallback((model: BusinessModel) => {
-    setBusinessModel(model);
-    if (model === 'garments') {
-      setInputs(prev => prev.printsPerDay > 100 ? { ...prev, printsPerDay: 100 } : prev);
-    }
-    // hybrid / transfers: preserve current printsPerDay
-  }, []);
-
-  const handleShare = useCallback(() => {
-    const url = encodeInputsToURL(inputs, businessModel, uiMode, basicModePreset);
-    navigator.clipboard.writeText(url).then(() => {
-      toast.success('Link copied!', {
-        description: 'Share this URL to pre-fill the calculator with your current configuration.',
-        duration: 3500,
-      });
-    }).catch(() => {
-      window.prompt('Copy this link to share your configuration:', url);
-    });
-  }, [inputs, businessModel, uiMode, basicModePreset]);
 
   const results = useMemo(() => calculateROI(inputs, businessModel), [inputs, businessModel]);
 
@@ -183,6 +177,106 @@ export default function Home() {
     if (activeSection === 'financing') steps.push('business');
     return steps;
   }, [activeSection]);
+
+  // Sync URL
+  useEffect(() => {
+    if (mode === 'calculator') {
+      const url = encodeInputsToURL(inputs, businessModel, uiMode, uiMode === 'basic' ? basicModeVolume : null);
+      window.history.replaceState(null, '', url);
+    }
+  }, [inputs, mode, businessModel, uiMode, basicModeVolume]);
+
+  const updateInput = useCallback(<K extends keyof ROIInputs>(key: K, value: ROIInputs[K]) => {
+    setInputs(prev => ({ ...prev, [key]: value }));
+  }, []);
+
+  const handleVolumeChange = useCallback((vol: number) => {
+    setBasicModeVolume(vol);
+    setInputs(prev => ({
+      ...prev,
+      printsPerDay: Math.max(1, Math.round(vol / prev.operatingDaysPerMonth)),
+    }));
+  }, []);
+
+  const handlePrinterChange = useCallback((id: string) => {
+    const printer = PRINTERS.find(p => p.id === id);
+    const compatibleIds = PRINTER_SHAKER_COMPAT[id] ?? [];
+    const defaultShaker = compatibleIds[0] ?? printer?.recommendedShaker ?? '';
+
+    setInputs(prev => {
+      const tentativeInputs: ROIInputs = {
+        ...prev,
+        printerId: id,
+        shakerId: defaultShaker,
+        inkCostPerMonth: printer?.inkCostPreset ?? prev.inkCostPerMonth,
+        cutterId: null,
+        otherEquipmentIds: [],
+      };
+      const be = computeBreakEvenVolume(tentativeInputs, businessModel);
+      setBreakEvenMonthlyVolume(be);
+      const vol = defaultVolumeStep(be);
+      setBasicModeVolume(vol);
+      return {
+        ...tentativeInputs,
+        printsPerDay: Math.max(1, Math.round(vol / prev.operatingDaysPerMonth)),
+      };
+    });
+  }, [businessModel]);
+
+  const handleBundleSelect = useCallback((bundleId: string) => {
+    const bundle = BUNDLE_PRESETS.find(b => b.id === bundleId);
+    if (!bundle) return;
+    const printer = PRINTERS.find(p => p.id === bundle.printerId);
+
+    setInputs(prev => {
+      const bundleInputs: ROIInputs = {
+        ...prev,
+        printerId: bundle.printerId,
+        shakerId: bundle.shakerId,
+        heatPressId: bundle.heatPressId,
+        cutterId: bundle.cutterId,
+        otherEquipmentIds: bundle.otherEquipmentIds,
+        inkCostPerMonth: printer?.inkCostPreset ?? prev.inkCostPerMonth,
+      };
+      const be = computeBreakEvenVolume(bundleInputs, businessModel);
+      setBreakEvenMonthlyVolume(be);
+      const vol = defaultVolumeStep(be);
+      setBasicModeVolume(vol);
+      return {
+        ...bundleInputs,
+        printsPerDay: Math.max(1, Math.round(vol / prev.operatingDaysPerMonth)),
+      };
+    });
+  }, [businessModel]);
+
+  const handleBusinessModelChange = useCallback((model: BusinessModel) => {
+    setBusinessModel(model);
+    setInputs(prev => {
+      const be = computeBreakEvenVolume(prev, model);
+      setBreakEvenMonthlyVolume(be);
+      if (uiMode === 'basic') {
+        const vol = defaultVolumeStep(be);
+        setBasicModeVolume(vol);
+        return { ...prev, printsPerDay: Math.max(1, Math.round(vol / prev.operatingDaysPerMonth)) };
+      } else {
+        return model === 'garments' && prev.printsPerDay > 100
+          ? { ...prev, printsPerDay: 100 }
+          : prev;
+      }
+    });
+  }, [uiMode]);
+
+  const handleShare = useCallback(() => {
+    const url = encodeInputsToURL(inputs, businessModel, uiMode, uiMode === 'basic' ? basicModeVolume : null);
+    navigator.clipboard.writeText(url).then(() => {
+      toast.success('Link copied!', {
+        description: 'Share this URL to pre-fill the calculator with your current configuration.',
+        duration: 3500,
+      });
+    }).catch(() => {
+      window.prompt('Copy this link to share your configuration:', url);
+    });
+  }, [inputs, businessModel, uiMode, basicModeVolume]);
 
   const scrollToResults = () => {
     setMobileResultsOpen(true);
@@ -300,8 +394,9 @@ export default function Home() {
                       onPrinterChange={handlePrinterChange}
                       onBundleSelect={handleBundleSelect}
                       onChange={updateInput}
-                      basicModePreset={basicModePreset}
-                      onBasicModePresetChange={setBasicModePreset}
+                      basicModeVolume={basicModeVolume}
+                      breakEvenMonthlyVolume={breakEvenMonthlyVolume}
+                      onVolumeChange={handleVolumeChange}
                     />
                     <div className="lg:hidden">
                       <button
@@ -407,7 +502,6 @@ export default function Home() {
 
               {/* RIGHT — Live Results */}
               <div ref={resultsRef} className="lg:sticky lg:top-[72px]">
-                {/* On mobile, show a collapsed summary that expands */}
                 <div className="lg:hidden mb-2">
                   <button
                     onClick={() => setMobileResultsOpen(o => !o)}
@@ -422,7 +516,13 @@ export default function Home() {
                 </div>
 
                 <div className={`${mobileResultsOpen ? 'block' : 'hidden'} lg:block`}>
-                  <ResultsDashboard results={results} inputs={inputs} onShare={handleShare} businessModel={businessModel} uiMode={uiMode} />
+                  <ResultsDashboard
+                    results={results}
+                    inputs={inputs}
+                    onShare={handleShare}
+                    businessModel={businessModel}
+                    uiMode={uiMode}
+                  />
                 </div>
               </div>
             </div>

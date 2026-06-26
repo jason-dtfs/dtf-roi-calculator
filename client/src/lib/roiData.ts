@@ -506,17 +506,19 @@ export function calculateROI(inputs: ROIInputs, businessModel: 'transfers' | 'ga
   const sellingPricePerShirt = Number.isFinite(inputs.sellingPricePerShirt) ? inputs.sellingPricePerShirt : 18;
   const blankGarmentCostPerShirt = Number.isFinite(inputs.blankGarmentCostPerShirt) ? inputs.blankGarmentCostPerShirt : 4.5;
 
+  let hybridTransfers = 0;
+  let hybridShirts = 0;
+
   if (businessModel === 'garments') {
     monthlyRevenue = monthlyShirts * sellingPricePerShirt;
     monthlyBlankGarmentCost = monthlyShirts * blankGarmentCostPerShirt;
   } else if (businessModel === 'hybrid') {
-    // Split total output 50/50 — half sold as transfers, half pressed into finished garments
-    const hybridMonthlyTransfers = monthlyPrints * 0.5;
-    const hybridMonthlyShirts = (inputs.printsPerDay * 0.5 / printsPerShirt) * inputs.operatingDaysPerMonth;
+    hybridTransfers = monthlyPrints * 0.5;
+    hybridShirts = (inputs.printsPerDay * 0.5 / printsPerShirt) * inputs.operatingDaysPerMonth;
     monthlyRevenue =
-      hybridMonthlyTransfers * inputs.sellingPricePerPrint +
-      hybridMonthlyShirts * sellingPricePerShirt;
-    monthlyBlankGarmentCost = hybridMonthlyShirts * blankGarmentCostPerShirt;
+      hybridTransfers * inputs.sellingPricePerPrint +
+      hybridShirts * sellingPricePerShirt;
+    monthlyBlankGarmentCost = hybridShirts * blankGarmentCostPerShirt;
   } else {
     monthlyRevenue = monthlyPrints * inputs.sellingPricePerPrint;
   }
@@ -524,7 +526,18 @@ export function calculateROI(inputs: ROIInputs, businessModel: 'transfers' | 'ga
   const monthlyFilmPowderCost = monthlyPrints * inputs.filmAndPowderCostPerPrint;
   const monthlyInkCost = inputs.inkCostPerMonth;
   const monthlyTotalConsumableCost = monthlyFilmPowderCost + monthlyInkCost + monthlyBlankGarmentCost;
-  const monthlyLaborCost = inputs.laborHoursPerDay * inputs.operatingDaysPerMonth * inputs.laborCostPerHour;
+
+  // Volume-based labor: transfers at 5/min (300/hr), garments at 1/min (60/hr)
+  const laborPerTransfer = inputs.laborCostPerHour / 300;
+  const laborPerShirt = inputs.laborCostPerHour / 60;
+  let monthlyLaborCost: number;
+  if (businessModel === 'garments') {
+    monthlyLaborCost = monthlyShirts * laborPerShirt;
+  } else if (businessModel === 'hybrid') {
+    monthlyLaborCost = hybridTransfers * laborPerTransfer + hybridShirts * laborPerShirt;
+  } else {
+    monthlyLaborCost = monthlyPrints * laborPerTransfer;
+  }
   const monthlyGrossProfit = monthlyRevenue - monthlyTotalConsumableCost - monthlyLaborCost;
   const monthlyNetProfit = monthlyGrossProfit - monthlyLoanPayment;
 
@@ -599,6 +612,8 @@ export function calculateROI(inputs: ROIInputs, businessModel: 'transfers' | 'ga
   };
 }
 
+export const BASIC_VOLUME_STEPS = [100, 250, 500, 1000, 2000, 3500, 5000, 10000, 15000, 20000];
+
 export function formatCurrency(value: number): string {
   if (Math.abs(value) >= 1000000) {
     return `$${(value / 1000000).toFixed(2)}M`;
@@ -628,7 +643,7 @@ export const DEFAULT_INPUTS: ROIInputs = {
   operatingDaysPerMonth: 22,
   sellingPricePerPrint: 4.50,
   filmAndPowderCostPerPrint: 0.75,
-  inkCostPerMonth: 400,
+  inkCostPerMonth: 250,
   laborHoursPerDay: 4,
   laborCostPerHour: 18,
   outsourcingCostPerPrint: 3.50,

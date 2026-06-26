@@ -1,5 +1,13 @@
-import { PRINTERS, BUNDLE_PRESETS, CUTTERS, formatCurrency, type ROIInputs } from '@/lib/roiData';
+import { PRINTERS, BUNDLE_PRESETS, CUTTERS, BASIC_VOLUME_STEPS, formatCurrency, type ROIInputs } from '@/lib/roiData';
 import { type BusinessModel, BUSINESS_MODEL_OPTIONS } from '@/components/BusinessInputs';
+
+function formatVol(v: number): string {
+  if (v >= 1000) {
+    const k = v / 1000;
+    return `${k % 1 === 0 ? k : k.toFixed(1)}k`;
+  }
+  return String(v);
+}
 
 interface Props {
   inputs: ROIInputs;
@@ -8,24 +16,35 @@ interface Props {
   onPrinterChange: (id: string) => void;
   onBundleSelect: (bundleId: string) => void;
   onChange: <K extends keyof ROIInputs>(key: K, value: ROIInputs[K]) => void;
-  basicModePreset: number | null;
-  onBasicModePresetChange: (preset: number | null) => void;
+  basicModeVolume: number;
+  breakEvenMonthlyVolume: number;
+  onVolumeChange: (vol: number) => void;
 }
 
-const VOLUME_PRESETS = [
-  { label: 'Just starting out', sub: '200/mo',    monthlyVolume: 200  },
-  { label: 'Side business',     sub: '500/mo',    monthlyVolume: 500  },
-  { label: 'Growing shop',      sub: '1,000/mo',  monthlyVolume: 1000 },
-  { label: 'Full production',   sub: '2,500/mo',  monthlyVolume: 2500 },
-] as const;
-
-export default function BasicMode({ inputs, businessModel, onBusinessModelChange, onPrinterChange, onBundleSelect, onChange, basicModePreset, onBasicModePresetChange }: Props) {
+export default function BasicMode({
+  inputs,
+  businessModel,
+  onBusinessModelChange,
+  onPrinterChange,
+  onBundleSelect,
+  onChange,
+  basicModeVolume,
+  breakEvenMonthlyVolume,
+  onVolumeChange,
+}: Props) {
   const handlePrinterSelect = (id: string) => {
-    onPrinterChange(id); // handles shaker, printsPerDay, inkCost
+    onPrinterChange(id);
     onChange('heatPressId', 'prismaAuto');
     const cutter = CUTTERS.find(c => c.compatiblePrinters.includes(id));
     onChange('cutterId', cutter?.id ?? null);
   };
+
+  const printer = PRINTERS.find(p => p.id === inputs.printerId);
+  const machineCapacity = (printer?.dailyOutputFullTime ?? 0) * 22;
+
+  const beText = breakEvenMonthlyVolume >= 99999
+    ? 'N/A at current pricing'
+    : `~${breakEvenMonthlyVolume.toLocaleString()}/mo`;
 
   return (
     <div className="space-y-3">
@@ -128,32 +147,47 @@ export default function BasicMode({ inputs, businessModel, onBusinessModelChange
         </div>
       </div>
 
-      {/* Monthly volume */}
+      {/* Volume ladder */}
       <div className="section-card space-y-3">
         <div>
-          <h3 className="text-sm font-semibold text-foreground">How many do you expect to sell per month?</h3>
+          <h3 className="text-sm font-semibold text-foreground">Expected Monthly Volume</h3>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Select a production level — results update instantly.
+          </p>
         </div>
-        <div className="grid grid-cols-2 gap-2">
-          {VOLUME_PRESETS.map(v => {
-            const isActive = basicModePreset === v.monthlyVolume;
+        <div className="grid grid-cols-5 gap-1.5">
+          {BASIC_VOLUME_STEPS.map(vol => {
+            const isActive = basicModeVolume === vol;
+            const isDisabled = vol > machineCapacity;
             return (
               <button
-                key={v.monthlyVolume}
-                onClick={() => {
-                  onBasicModePresetChange(v.monthlyVolume);
-                  onChange('printsPerDay', Math.round(v.monthlyVolume / 22));
-                }}
-                className="flex flex-col items-start gap-0.5 px-3 py-2.5 rounded-lg border transition-all"
-                style={isActive
-                  ? { borderColor: '#45C1BF', background: 'rgba(69,193,191,0.07)' }
-                  : { borderColor: 'oklch(0.91 0.004 260)', background: 'transparent' }}
+                key={vol}
+                disabled={isDisabled}
+                title={isDisabled ? "Exceeds this machine's capacity — consider an upgraded model." : undefined}
+                onClick={() => onVolumeChange(vol)}
+                className="flex flex-col items-center py-2 px-1 rounded-lg border transition-all"
+                style={
+                  isDisabled
+                    ? { borderColor: 'oklch(0.91 0.004 260)', background: 'transparent', opacity: 0.35, cursor: 'not-allowed' }
+                    : isActive
+                    ? { borderColor: '#45C1BF', background: 'rgba(69,193,191,0.07)' }
+                    : { borderColor: 'oklch(0.91 0.004 260)', background: 'transparent' }
+                }
               >
-                <span className="text-sm font-semibold text-foreground">{v.label}</span>
-                <span className="text-xs text-muted-foreground font-data">{v.sub}</span>
+                <span
+                  className="text-xs font-semibold font-data"
+                  style={{ color: isActive && !isDisabled ? '#45C1BF' : 'oklch(0.25 0.005 260)' }}
+                >
+                  {formatVol(vol)}
+                </span>
+                <span className="text-[10px] text-muted-foreground">/mo</span>
               </button>
             );
           })}
         </div>
+        <p className="text-xs text-muted-foreground text-center">
+          Break Even: <span className="font-semibold text-foreground">{beText}</span>
+        </p>
       </div>
 
     </div>
