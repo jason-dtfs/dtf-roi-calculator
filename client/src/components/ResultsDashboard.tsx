@@ -7,7 +7,7 @@
 import { useMemo, useState } from 'react';
 import {
   AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid,
-  Tooltip as RechartsTooltip, ResponsiveContainer, ReferenceLine, Cell
+  Tooltip as RechartsTooltip, ResponsiveContainer, ReferenceLine, ReferenceDot, Cell
 } from 'recharts';
 import { type ROIResults, type ROIInputs, formatCurrency, PRINTERS, SHAKERS, HEAT_PRESSES } from '@/lib/roiData';
 import { exportROIPDF } from '@/lib/exportPDF';
@@ -77,29 +77,68 @@ const TOOLTIP_STYLE = {
   boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
 };
 
-function ProfitTooltip({ active, payload, label }: { active?: boolean; payload?: Array<{ value: number; name: string }>; label?: string }) {
+function PaybackTooltip({ active, payload }: { active?: boolean; payload?: Array<{ value: number; payload: { month: number } }> }) {
   if (!active || !payload?.length) return null;
+  const p = payload[0];
+  const month = p.payload.month;
+  const val = p.value;
   return (
     <div style={TOOLTIP_STYLE}>
-      <p className="font-semibold mb-1 text-muted-foreground">{label}</p>
-      {payload.map((p, i) => (
-        <p key={i} style={{ color: BRAND_HEX }} className="font-semibold">
-          {p.name}: {formatCurrency(p.value)}
-        </p>
-      ))}
+      <p className="font-semibold mb-1 text-muted-foreground">{month === 0 ? 'Start' : `Month ${month}`}</p>
+      <p className="font-semibold" style={{ color: val >= 0 ? '#22C55E' : '#ef4444' }}>
+        Cash position: {formatCurrency(val)}
+      </p>
     </div>
   );
 }
 
-function BarTooltip({ active, payload }: { active?: boolean; payload?: Array<{ name: string; value: number; payload: { fill: string } }> }) {
+function WaterfallTooltip({ active, payload }: { active?: boolean; payload?: Array<{ dataKey: string; payload: { name: string; color: string; displayValue: number } }> }) {
   if (!active || !payload?.length) return null;
-  const item = payload[0];
+  const entry = payload.find(p => p.dataKey === 'delta');
+  if (!entry) return null;
+  const { name, color, displayValue } = entry.payload;
   return (
     <div style={TOOLTIP_STYLE}>
-      <p className="font-semibold" style={{ color: item.payload.fill }}>{item.name}</p>
-      <p className="text-foreground">{formatCurrency(item.value)}/mo</p>
+      <p className="font-semibold" style={{ color }}>{name}</p>
+      <p className="text-foreground">{formatCurrency(displayValue)}/mo</p>
     </div>
   );
+}
+
+function buildWaterfallData(results: ROIResults) {
+  // monthlyBlankGarmentCost isn't on ROIResults directly — derive it
+  const garmentCost = results.monthlyTotalConsumableCost - results.monthlyFilmPowderCost - results.monthlyInkCost;
+
+  const costItems: Array<{ name: string; amount: number; color: string }> = [
+    { name: 'Film & Powder', amount: results.monthlyFilmPowderCost, color: '#F97316' },
+    { name: 'Ink', amount: results.monthlyInkCost, color: '#F59E0B' },
+    { name: 'Labor', amount: results.monthlyLaborCost, color: '#EAB308' },
+    { name: 'Equipment', amount: results.monthlyLoanPayment, color: '#8B5CF6' },
+    ...(garmentCost > 0.5
+      ? [{ name: 'Garments', amount: garmentCost, color: '#EC4899' }]
+      : []),
+  ];
+
+  const data: Array<{ name: string; base: number; delta: number; color: string; displayValue: number }> = [
+    { name: 'Revenue', base: 0, delta: results.monthlyRevenue, color: BRAND_HEX, displayValue: results.monthlyRevenue },
+  ];
+
+  let running = results.monthlyRevenue;
+  costItems.forEach(({ name, amount, color }) => {
+    running -= amount;
+    data.push({ name, base: running, delta: amount, color, displayValue: -amount });
+  });
+
+  const netProfit = results.monthlyNetProfit;
+  data.push({
+    name: 'Net Profit',
+    base: Math.min(0, netProfit),
+    delta: Math.abs(netProfit),
+    color: netProfit >= 0 ? '#22C55E' : '#ef4444',
+    displayValue: netProfit,
+  });
+
+  return data;
 }
 
 const CHART_COLORS = {
@@ -222,21 +261,22 @@ export default function ResultsDashboard({ results, inputs, onShare, businessMod
 
   const isProfit = results.monthlyNetProfit > 0;
 
-  const chartData = results.monthlyChartData.map(d => ({
-    ...d,
-    label: d.month % 6 === 0 || d.month === 1 ? `Mo ${d.month}` : '',
-  }));
-
-  const breakevenMonth = results.monthlyChartData.find(d => d.cumulativeProfit >= 0)?.month;
-
-  const barData = [
-    { name: 'Revenue', value: results.monthlyRevenue, fill: CHART_COLORS.revenue },
-    { name: 'Film & Powder', value: results.monthlyFilmPowderCost, fill: CHART_COLORS.consumables },
-    { name: 'Ink', value: results.monthlyInkCost, fill: '#F59E0B' },
-    { name: 'Labor', value: results.monthlyLaborCost, fill: CHART_COLORS.labor },
-    { name: 'Equipment', value: results.monthlyLoanPayment, fill: CHART_COLORS.equipment },
-    { name: 'Net Profit', value: Math.max(0, results.monthlyNetProfit), fill: CHART_COLORS.profit },
+  // Payback timeline data: prepend month 0 at -downPayment
+  const paybackData = [
+    { month: 0, cumulativeProfit: -results.downPayment },
+    ...results.monthlyChartData.map(d => ({ month: d.month, cumulativeProfit: d.cumulativeProfit })),
   ];
+  const paybackCrossMonth = results.monthlyChartData.find(d => d.cumulativeProfit >= 0)?.month;
+
+  // Gradient zero-offset: fraction from top where y=0 falls on the chart
+  const allPaybackVals = paybackData.map(d => d.cumulativeProfit);
+  const pbMin = Math.min(...allPaybackVals);
+  const pbMax = Math.max(...allPaybackVals);
+  const zeroGradOffset = pbMax > 0 && pbMin < 0
+    ? pbMax / (pbMax - pbMin)
+    : pbMax <= 0 ? 0 : 1;
+
+  const waterfallData = buildWaterfallData(results);
 
   return (
     <div className="space-y-4">
@@ -346,31 +386,39 @@ export default function ResultsDashboard({ results, inputs, onShare, businessMod
         </div>
       )}
 
-      {/* Profit Trajectory */}
+      {/* Payback Timeline */}
       <div className="section-card">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h3 className="text-sm font-semibold text-foreground">36-Month Profit Trajectory</h3>
-            {breakevenMonth && (
-              <p className="text-xs text-muted-foreground mt-0.5">Breakeven at month {breakevenMonth}</p>
-            )}
+            <h3 className="text-sm font-semibold text-foreground">Payback Timeline</h3>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {paybackCrossMonth
+                ? `Paid back at month ${paybackCrossMonth}`
+                : 'Does not reach payback at this volume.'}
+            </p>
           </div>
           <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
             <div className="w-2.5 h-2.5 rounded-full" style={{ background: BRAND_HEX }} />
-            Cumulative Profit
+            Cash position
           </div>
         </div>
-        <ResponsiveContainer width="100%" height={180}>
-          <AreaChart data={chartData} margin={{ top: 5, right: 5, left: 0, bottom: 0 }}>
+        <ResponsiveContainer width="100%" height={190}>
+          <AreaChart data={paybackData} margin={{ top: 28, right: 8, left: 0, bottom: 0 }}>
             <defs>
-              <linearGradient id="profitGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor={BRAND_HEX} stopOpacity={0.15} />
-                <stop offset="95%" stopColor={BRAND_HEX} stopOpacity={0} />
+              <linearGradient id="paybackGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#22C55E" stopOpacity={0.18} />
+                <stop offset={`${zeroGradOffset * 100}%`} stopColor="#22C55E" stopOpacity={0.04} />
+                <stop offset={`${zeroGradOffset * 100}%`} stopColor="#ef4444" stopOpacity={0.06} />
+                <stop offset="100%" stopColor="#ef4444" stopOpacity={0.22} />
               </linearGradient>
             </defs>
             <CartesianGrid strokeDasharray="3 3" stroke="oklch(0.91 0.004 260)" />
             <XAxis
-              dataKey="label"
+              dataKey="month"
+              type="number"
+              domain={[0, 36]}
+              ticks={[0, 6, 12, 18, 24, 30, 36]}
+              tickFormatter={v => v === 0 ? 'Start' : `Mo ${v}`}
               tick={{ fill: 'oklch(0.52 0.01 260)', fontSize: 10, fontFamily: 'Poppins, sans-serif' }}
               axisLine={false}
               tickLine={false}
@@ -379,26 +427,35 @@ export default function ResultsDashboard({ results, inputs, onShare, businessMod
               tick={{ fill: 'oklch(0.52 0.01 260)', fontSize: 10, fontFamily: 'Poppins, sans-serif' }}
               axisLine={false}
               tickLine={false}
-              tickFormatter={(v) => formatCurrency(v)}
+              tickFormatter={v => formatCurrency(v)}
               width={62}
             />
-            <RechartsTooltip content={<ProfitTooltip />} />
-            <ReferenceLine y={0} stroke="oklch(0.91 0.004 260)" strokeDasharray="4 4" />
-            {breakevenMonth && (
-              <ReferenceLine
-                x={`Mo ${breakevenMonth}`}
-                stroke="#22C55E"
-                strokeDasharray="4 4"
-                label={{ value: 'Breakeven', fill: '#22C55E', fontSize: 10, position: 'top', fontFamily: 'Poppins, sans-serif' }}
+            <RechartsTooltip content={<PaybackTooltip />} />
+            <ReferenceLine y={0} stroke="oklch(0.75 0.004 260)" strokeDasharray="4 4" />
+            {paybackCrossMonth && (
+              <ReferenceDot
+                x={paybackCrossMonth}
+                y={0}
+                r={5}
+                fill="#22C55E"
+                stroke="white"
+                strokeWidth={2}
+                label={{
+                  value: `Paid back: Mo ${paybackCrossMonth}`,
+                  position: 'top',
+                  fill: '#22C55E',
+                  fontSize: 10,
+                  fontFamily: 'Poppins, sans-serif',
+                }}
               />
             )}
             <Area
               type="monotone"
               dataKey="cumulativeProfit"
-              name="Cumulative Profit"
+              name="Cash Position"
               stroke={BRAND_HEX}
               strokeWidth={2}
-              fill="url(#profitGrad)"
+              fill="url(#paybackGrad)"
               dot={false}
               activeDot={{ r: 4, fill: BRAND_HEX, stroke: 'white', strokeWidth: 2 }}
             />
@@ -406,56 +463,55 @@ export default function ResultsDashboard({ results, inputs, onShare, businessMod
         </ResponsiveContainer>
       </div>
 
-      {/* Monthly Breakdown */}
+      {/* Monthly Cost Breakdown — waterfall */}
       <div className="section-card">
-        <h3 className="text-sm font-semibold text-foreground mb-4">Monthly Revenue Breakdown</h3>
+        <h3 className="text-sm font-semibold text-foreground mb-4">Monthly Cost Breakdown</h3>
         <div className="grid grid-cols-2 gap-4">
-          <ResponsiveContainer width="100%" height={150}>
-            <BarChart data={barData} margin={{ top: 5, right: 5, left: 0, bottom: 20 }}>
+          <ResponsiveContainer width="100%" height={170}>
+            <BarChart data={waterfallData} margin={{ top: 5, right: 5, left: 0, bottom: 24 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="oklch(0.91 0.004 260)" vertical={false} />
               <XAxis
                 dataKey="name"
                 tick={{ fill: 'oklch(0.52 0.01 260)', fontSize: 9, fontFamily: 'Poppins, sans-serif' }}
                 axisLine={false}
                 tickLine={false}
-                angle={-30}
+                angle={-35}
                 textAnchor="end"
+                interval={0}
               />
               <YAxis
                 tick={{ fill: 'oklch(0.52 0.01 260)', fontSize: 9, fontFamily: 'Poppins, sans-serif' }}
                 axisLine={false}
                 tickLine={false}
-                tickFormatter={(v) => `$${(v / 1000).toFixed(0)}K`}
-                width={36}
+                tickFormatter={v => formatCurrency(v)}
+                width={48}
               />
-              <RechartsTooltip content={<BarTooltip />} />
-              <Bar dataKey="value" radius={[3, 3, 0, 0]}>
-                {barData.map((entry, index) => (
-                  <Cell key={index} fill={entry.fill} />
+              <RechartsTooltip content={<WaterfallTooltip />} />
+              {/* Transparent base bar pushes each delta bar to the correct floating position */}
+              <Bar dataKey="base" stackId="wf" fill="transparent" isAnimationActive={false} />
+              <Bar dataKey="delta" stackId="wf" radius={[3, 3, 0, 0]} isAnimationActive={false}>
+                {waterfallData.map((entry, i) => (
+                  <Cell key={i} fill={entry.color} />
                 ))}
               </Bar>
             </BarChart>
           </ResponsiveContainer>
 
           <div className="space-y-1.5 flex flex-col justify-center">
-            {[
-              { label: 'Revenue', value: results.monthlyRevenue, color: CHART_COLORS.revenue, sign: '' },
-              { label: 'Film & Powder', value: results.monthlyFilmPowderCost, color: CHART_COLORS.consumables, sign: '-' },
-              { label: 'Ink', value: results.monthlyInkCost, color: '#F59E0B', sign: '-' },
-              { label: 'Labor', value: results.monthlyLaborCost, color: CHART_COLORS.labor, sign: '-' },
-              { label: 'Equipment Pmt', value: results.monthlyLoanPayment, color: CHART_COLORS.equipment, sign: '-' },
-              { label: 'Net Profit', value: results.monthlyNetProfit, color: CHART_COLORS.profit, sign: '', bold: true },
-            ].map(({ label, value, color, sign, bold }) => (
-              <div key={label} className={`flex justify-between items-center py-1 ${bold ? 'border-t border-border mt-1 pt-2' : ''}`}>
-                <div className="flex items-center gap-1.5">
-                  <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: color }} />
-                  <span className={`text-xs ${bold ? 'font-semibold text-foreground' : 'text-muted-foreground'}`}>{label}</span>
+            {waterfallData.map(({ name, color, displayValue }, i) => {
+              const isTotals = name === 'Net Profit';
+              return (
+                <div key={name} className={`flex justify-between items-center py-0.5 ${isTotals ? 'border-t border-border mt-1 pt-2' : ''}`}>
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: color }} />
+                    <span className={`text-xs ${isTotals ? 'font-semibold text-foreground' : 'text-muted-foreground'}`}>{name}</span>
+                  </div>
+                  <span className={`text-xs font-semibold font-data ${isTotals ? 'text-sm' : ''}`} style={{ color }}>
+                    {displayValue < 0 ? '-' : ''}{formatCurrency(Math.abs(displayValue))}
+                  </span>
                 </div>
-                <span className={`text-xs font-semibold font-data ${bold ? 'text-sm' : ''}`} style={{ color }}>
-                  {sign}{formatCurrency(Math.abs(value))}
-                </span>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </div>
