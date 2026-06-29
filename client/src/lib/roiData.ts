@@ -7,6 +7,17 @@
 
 // ─── Printer ────────────────────────────────────────────────────────────────
 
+export interface PrinterSpecs {
+  printWidthIn: number;
+  speedDisplay: string;
+  speedMax: number;
+  printheads: string;
+  printheadCount: number;
+  colorConfig: string;
+  isNineColor: boolean;
+  dailyOutput: string;
+}
+
 export interface PrinterModel {
   id: string;
   name: string;
@@ -27,7 +38,8 @@ export interface PrinterModel {
   description: string;
   features: string[];
   recommendedShaker: string;
-  inkCostPreset: number; // Recommended monthly ink cost ($) based on typical usage
+  inkCostPreset: number;
+  specs: PrinterSpecs;
 }
 
 export const PRINTERS: PrinterModel[] = [
@@ -50,6 +62,7 @@ export const PRINTERS: PrinterModel[] = [
     features: ['Epson F1080 printhead', 'WIMS white ink management', 'Auto-cleaning', '13" print width'],
     recommendedShaker: 'miro13',
     inkCostPreset: 150,
+    specs: { printWidthIn: 13, speedDisplay: '10–14', speedMax: 14, printheads: 'Epson F1080', printheadCount: 1, colorConfig: 'CMYK + White', isNineColor: false, dailyOutput: '60–80' },
   },
   {
     id: 'r2pro',
@@ -70,6 +83,7 @@ export const PRINTERS: PrinterModel[] = [
     features: ['Dual Epson i1600 heads', 'Active auto-cleaning', 'Head-strike sensor', 'Built-in sheet cutter'],
     recommendedShaker: 'miro13',
     inkCostPreset: 250,
+    specs: { printWidthIn: 13, speedDisplay: '30–45', speedMax: 45, printheads: '(2) Epson i1600', printheadCount: 2, colorConfig: 'CMYK + White', isNineColor: false, dailyOutput: '240–360' },
   },
   {
     id: 'xl2',
@@ -90,6 +104,7 @@ export const PRINTERS: PrinterModel[] = [
     features: ['Dual Epson i3200 heads', '24" print width', '82.9 sq ft/hr', '510–660 pcs/day'],
     recommendedShaker: 'miro24',
     inkCostPreset: 700,
+    specs: { printWidthIn: 23.62, speedDisplay: '65–80', speedMax: 80, printheads: '(2) Epson i3200', printheadCount: 2, colorConfig: 'CMYK + White', isNineColor: false, dailyOutput: '510–660' },
   },
   {
     id: 'xl2pro',
@@ -111,6 +126,7 @@ export const PRINTERS: PrinterModel[] = [
     features: ['Dual Epson i3200 heads', '24" print width', 'Enhanced automation', '350–500 pcs/day'],
     recommendedShaker: 'miro24',
     inkCostPreset: 800,
+    specs: { printWidthIn: 23.62, speedDisplay: '45–65', speedMax: 65, printheads: 'i3200HD + i1600', printheadCount: 2, colorConfig: '9-Color (CMYK+W+LcLmGO)', isNineColor: true, dailyOutput: '350–500' },
   },
   {
     id: 'xl3',
@@ -131,6 +147,7 @@ export const PRINTERS: PrinterModel[] = [
     features: ['Triple Epson i3200 heads', '24" print width', '110 sq ft/hr', '700–900 pcs/day'],
     recommendedShaker: 'seismoL24R',
     inkCostPreset: 950,
+    specs: { printWidthIn: 23.62, speedDisplay: '65–75', speedMax: 75, printheads: '(3) Epson i3200', printheadCount: 3, colorConfig: '9-Color (CMYK+W+LcLmGO)', isNineColor: true, dailyOutput: '700–900' },
   },
   {
     id: 'xl4',
@@ -151,6 +168,7 @@ export const PRINTERS: PrinterModel[] = [
     features: ['Quad Epson i3200 heads', '24" print width', 'Fastest 24" available', '1000–1200 pcs/day'],
     recommendedShaker: 'seismoL24R',
     inkCostPreset: 1200,
+    specs: { printWidthIn: 23.62, speedDisplay: '130–150', speedMax: 150, printheads: '(4) Epson i3200', printheadCount: 4, colorConfig: 'CMYK + White', isNineColor: false, dailyOutput: '1000–1200' },
   },
   {
     id: 'x6',
@@ -171,6 +189,7 @@ export const PRINTERS: PrinterModel[] = [
     features: ['Six Epson i3200 heads', '36.6" print width', '9-color gamut', '1100–1440 pcs/day'],
     recommendedShaker: 'seismoV36R',
     inkCostPreset: 1800,
+    specs: { printWidthIn: 36.6, speedDisplay: '140–180', speedMax: 180, printheads: '(6) Epson i3200', printheadCount: 6, colorConfig: '9-Color (CMYK+W+LcLmGO)', isNineColor: true, dailyOutput: '1100–1440' },
   },
 ];
 
@@ -184,6 +203,11 @@ export interface ShakerModel {
   basePrice: number;
   description: string;
   type: 'manual' | 'automatic';
+  specs: {
+    maxWidthDisplay: string;
+    maxWidthIn: number;
+    powderRecirculation: boolean;
+  };
 }
 
 export const SHAKERS: ShakerModel[] = [
@@ -195,6 +219,7 @@ export const SHAKERS: ShakerModel[] = [
     basePrice: 1995,
     description: 'All-in-one shaker/dryer for 13" setups with bottom platen heating and built-in purifier.',
     type: 'automatic',
+    specs: { maxWidthDisplay: '13.78"', maxWidthIn: 13.78, powderRecirculation: false },
   },
   {
     id: 'miro16',
@@ -204,6 +229,7 @@ export const SHAKERS: ShakerModel[] = [
     basePrice: 3950,
     description: 'Dedicated 16" shaker/dryer with patented bottom heating and built-in purifier.',
     type: 'automatic',
+    specs: { maxWidthDisplay: '16"', maxWidthIn: 16, powderRecirculation: false },
   },
   {
     id: 'miro24',
@@ -213,6 +239,7 @@ export const SHAKERS: ShakerModel[] = [
     basePrice: 4995,
     description: '24" shaker/dryer with reduced power consumption at 1,700W.',
     type: 'automatic',
+    specs: { maxWidthDisplay: '23.62"', maxWidthIn: 23.62, powderRecirculation: false },
   },
   {
     id: 'seismoL16R',
@@ -222,6 +249,7 @@ export const SHAKERS: ShakerModel[] = [
     basePrice: 6995,
     description: 'Production 16" shaker with touch screen and automatic powder reuse.',
     type: 'automatic',
+    specs: { maxWidthDisplay: '16"', maxWidthIn: 16, powderRecirculation: true },
   },
   {
     id: 'seismoL24R',
@@ -231,6 +259,7 @@ export const SHAKERS: ShakerModel[] = [
     basePrice: 7995,
     description: 'Production 24" shaker with touch screen and automatic powder reuse.',
     type: 'automatic',
+    specs: { maxWidthDisplay: '23.62"', maxWidthIn: 23.62, powderRecirculation: true },
   },
   {
     id: 'seismoV36R',
@@ -240,6 +269,7 @@ export const SHAKERS: ShakerModel[] = [
     basePrice: 9528,
     description: 'High-capacity 36" production shaker for the Prestige X6 wide-format system.',
     type: 'automatic',
+    specs: { maxWidthDisplay: '36"', maxWidthIn: 36, powderRecirculation: true },
   },
 ];
 
@@ -264,8 +294,12 @@ export interface HeatPressModel {
   sku: string;
   basePrice: number;
   description: string;
-  /** If set, only show this option when the selected printer is in this list */
   printerRestriction?: string[];
+  specs?: {
+    platenSize: string;
+    maxTemp: string;
+    type: string;
+  };
 }
 
 export const HEAT_PRESSES: HeatPressModel[] = [
@@ -275,6 +309,7 @@ export const HEAT_PRESSES: HeatPressModel[] = [
     sku: 'PRISMA-AUTO-1620',
     basePrice: 1399,
     description: 'Industrial auto heat press for standard production environments.',
+    specs: { platenSize: '16"×20"', maxTemp: '430°F', type: 'Auto-open single platen' },
   },
   {
     id: 'prismaDual',
@@ -283,6 +318,7 @@ export const HEAT_PRESSES: HeatPressModel[] = [
     basePrice: 7900,
     description: 'Dual-platen industrial heat press for XL2 and above — maximises throughput.',
     printerRestriction: ['xl2', 'xl2pro', 'xl3', 'xl4', 'x6'],
+    specs: { platenSize: '16"×20"', maxTemp: '430°F', type: 'Dual-platen' },
   },
   {
     id: 'none',

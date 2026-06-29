@@ -369,6 +369,49 @@ function KPIRow({ label, valueA, valueB, rawA, rawB, colorA, colorB, higherIsBet
   );
 }
 
+// ─── Spec row (string values, optional winner highlight) ──────────────────────
+
+interface SpecRowProps {
+  label: string;
+  valueA: string;
+  valueB: string;
+  winner?: 'A' | 'B' | null;
+  colorA: string;
+  colorB: string;
+}
+
+function SpecRow({ label, valueA, valueB, winner = null, colorA, colorB }: SpecRowProps) {
+  const aWins = winner === 'A';
+  const bWins = winner === 'B';
+  return (
+    <div className="py-3 border-b border-border last:border-0">
+      <p className="text-xs font-semibold text-foreground mb-2">{label}</p>
+      <div className="grid grid-cols-2 gap-3">
+        <div
+          className={`px-3 py-2 rounded-lg text-center ${aWins ? 'ring-1' : ''}`}
+          style={{ backgroundColor: `${colorA}15`, ...(aWins ? { ringColor: colorA } : {}) }}
+        >
+          <p className="text-sm font-bold font-data" style={{ color: colorA }}>{valueA}</p>
+          {aWins && <p className="text-xs text-muted-foreground mt-0.5">Better ↑</p>}
+        </div>
+        <div
+          className={`px-3 py-2 rounded-lg text-center ${bWins ? 'ring-1' : ''}`}
+          style={{ backgroundColor: `${colorB}15`, ...(bWins ? { ringColor: colorB } : {}) }}
+        >
+          <p className="text-sm font-bold font-data" style={{ color: colorB }}>{valueB}</p>
+          {bWins && <p className="text-xs text-muted-foreground mt-0.5">Better ↑</p>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function specWinner(a: number, b: number): 'A' | 'B' | null {
+  if (a > b) return 'A';
+  if (b > a) return 'B';
+  return null;
+}
+
 // ─── Main component ───────────────────────────────────────────────────────────
 
 const COLOR_A = '#45C1BF';
@@ -409,6 +452,10 @@ export default function ComparisonMode() {
 
   const printerA = PRINTERS.find(p => p.id === inputsA.printerId);
   const printerB = PRINTERS.find(p => p.id === inputsB.printerId);
+  const shakerA  = SHAKERS.find(s => s.id === inputsA.shakerId);
+  const shakerB  = SHAKERS.find(s => s.id === inputsB.shakerId);
+  const heatPressA = HEAT_PRESSES.find(h => h.id === inputsA.heatPressId);
+  const heatPressB = HEAT_PRESSES.find(h => h.id === inputsB.heatPressId);
 
   const priceSliderPct = (v: number) => ((v - 1) / 14) * 100;
   const shirtPriceSliderPct = (v: number) => ((v - 10) / 40) * 100;
@@ -590,6 +637,84 @@ export default function ComparisonMode() {
           colorA={COLOR_A}
           colorB={COLOR_B}
           icon={<TrendingUp className="w-3.5 h-3.5" />}
+        />
+      </div>
+
+      {/* Specifications Comparison */}
+      <div className="section-card">
+        <h3 className="text-sm font-semibold text-foreground mb-1">Specifications Comparison</h3>
+        {/* Printer specs */}
+        <SpecRow
+          label="Print Width"
+          valueA={printerA ? `${printerA.specs.printWidthIn}"` : '—'}
+          valueB={printerB ? `${printerB.specs.printWidthIn}"` : '—'}
+          winner={printerA && printerB ? specWinner(printerA.specs.printWidthIn, printerB.specs.printWidthIn) : null}
+          colorA={COLOR_A} colorB={COLOR_B}
+        />
+        <SpecRow
+          label="Print Speed (sq ft/hr)"
+          valueA={printerA?.specs.speedDisplay ?? '—'}
+          valueB={printerB?.specs.speedDisplay ?? '—'}
+          winner={printerA && printerB ? specWinner(printerA.specs.speedMax, printerB.specs.speedMax) : null}
+          colorA={COLOR_A} colorB={COLOR_B}
+        />
+        <SpecRow
+          label="Printheads"
+          valueA={printerA?.specs.printheads ?? '—'}
+          valueB={printerB?.specs.printheads ?? '—'}
+          winner={printerA && printerB ? specWinner(printerA.specs.printheadCount, printerB.specs.printheadCount) : null}
+          colorA={COLOR_A} colorB={COLOR_B}
+        />
+        <SpecRow
+          label="Color Configuration"
+          valueA={printerA?.specs.colorConfig ?? '—'}
+          valueB={printerB?.specs.colorConfig ?? '—'}
+          winner={printerA && printerB ? specWinner(printerA.specs.isNineColor ? 1 : 0, printerB.specs.isNineColor ? 1 : 0) : null}
+          colorA={COLOR_A} colorB={COLOR_B}
+        />
+        <SpecRow
+          label="Daily Output (pcs)"
+          valueA={printerA?.specs.dailyOutput ?? '—'}
+          valueB={printerB?.specs.dailyOutput ?? '—'}
+          winner={printerA && printerB ? specWinner(printerA.dailyOutputMax, printerB.dailyOutputMax) : null}
+          colorA={COLOR_A} colorB={COLOR_B}
+        />
+        {/* Shaker specs */}
+        <SpecRow
+          label="Shaker Max Width"
+          valueA={shakerA?.specs.maxWidthDisplay ?? '—'}
+          valueB={shakerB?.specs.maxWidthDisplay ?? '—'}
+          winner={shakerA && shakerB ? specWinner(shakerA.specs.maxWidthIn, shakerB.specs.maxWidthIn) : null}
+          colorA={COLOR_A} colorB={COLOR_B}
+        />
+        <SpecRow
+          label="Powder Recirculation"
+          valueA={shakerA ? (shakerA.specs.powderRecirculation ? 'Yes' : 'No') : '—'}
+          valueB={shakerB ? (shakerB.specs.powderRecirculation ? 'Yes' : 'No') : '—'}
+          winner={shakerA && shakerB ? specWinner(shakerA.specs.powderRecirculation ? 1 : 0, shakerB.specs.powderRecirculation ? 1 : 0) : null}
+          colorA={COLOR_A} colorB={COLOR_B}
+        />
+        {/* Heat press specs */}
+        <SpecRow
+          label="Heat Press Platen"
+          valueA={heatPressA?.specs?.platenSize ?? '—'}
+          valueB={heatPressB?.specs?.platenSize ?? '—'}
+          winner={null}
+          colorA={COLOR_A} colorB={COLOR_B}
+        />
+        <SpecRow
+          label="Heat Press Max Temp"
+          valueA={heatPressA?.specs?.maxTemp ?? '—'}
+          valueB={heatPressB?.specs?.maxTemp ?? '—'}
+          winner={null}
+          colorA={COLOR_A} colorB={COLOR_B}
+        />
+        <SpecRow
+          label="Heat Press Type"
+          valueA={heatPressA?.specs?.type ?? '—'}
+          valueB={heatPressB?.specs?.type ?? '—'}
+          winner={null}
+          colorA={COLOR_A} colorB={COLOR_B}
         />
       </div>
 
