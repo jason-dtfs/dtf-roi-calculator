@@ -4,7 +4,7 @@
  * Design: Clean minimal, Poppins, teal (#45C1BF) accent
  */
 
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import {
   calculateROI,
   getPrinterShakerTotal,
@@ -34,12 +34,6 @@ import {
 } from 'recharts';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-
-const COMPARISON_PRESETS = [
-  { label: 'Starter vs Intermediate', a: 'starter', b: 'intermediate' },
-  { label: 'Intermediate vs Advanced', a: 'intermediate', b: 'advanced' },
-  { label: 'Starter vs Advanced', a: 'starter', b: 'advanced' },
-];
 
 function applyBundle(bundleId: string): ROIInputs {
   const bundle = BUNDLE_PRESETS.find(b => b.id === bundleId);
@@ -404,12 +398,6 @@ export default function ComparisonMode() {
   const resultsA = useMemo(() => calculateROI(effectiveA, sharedBusinessModel), [effectiveA, sharedBusinessModel]);
   const resultsB = useMemo(() => calculateROI(effectiveB, sharedBusinessModel), [effectiveB, sharedBusinessModel]);
 
-  const handlePreset = useCallback((presetIdx: number) => {
-    const p = COMPARISON_PRESETS[presetIdx];
-    setInputsA(applyBundle(p.a));
-    setInputsB(applyBundle(p.b));
-  }, []);
-
   const chartData = useMemo(() => {
     return resultsA.monthlyChartData.map((d, i) => ({
       month: d.month,
@@ -433,129 +421,81 @@ export default function ComparisonMode() {
         <h2 className="text-base font-bold text-foreground">Comparison Mode</h2>
       </div>
 
-      {/* Quick presets */}
-      <div className="section-card">
-        <p className="text-xs text-muted-foreground mb-2 font-medium">Quick comparison presets:</p>
-        <div className="flex gap-2 flex-wrap">
-          {COMPARISON_PRESETS.map((p, i) => (
-            <button
-              key={i}
-              onClick={() => handlePreset(i)}
-              className="px-3 py-1.5 text-xs rounded-lg border border-border hover:border-primary/60 hover:bg-primary/5 transition-all font-medium"
-            >
-              {p.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
       {/* ── Shared Scenario Controls ─────────────────────────────────────────── */}
-      <div className="section-card space-y-4">
-        <div>
+      <div className="section-card space-y-2.5">
+        <div className="flex items-baseline justify-between">
           <h3 className="text-sm font-semibold text-foreground">Shared Scenario</h3>
-          <p className="text-xs text-muted-foreground mt-0.5">Both configurations are evaluated at these same values.</p>
+          <span className="text-[11px] text-muted-foreground">same values for both configs</span>
         </div>
 
-        {/* Business model */}
-        <div>
-          <p className="text-xs text-muted-foreground mb-2 font-medium">Business Model</p>
-          <div className="flex gap-1.5">
-            {BUSINESS_MODEL_OPTIONS.map(opt => {
-              const isActive = sharedBusinessModel === opt.value;
-              return (
-                <button
-                  key={opt.value}
-                  onClick={() => setSharedBusinessModel(opt.value)}
-                  className="flex-1 py-2 px-2 rounded-lg border text-xs font-medium transition-all"
-                  style={
-                    isActive
-                      ? { borderColor: '#45C1BF', background: 'rgba(69,193,191,0.07)', color: '#45C1BF' }
-                      : { borderColor: 'oklch(0.91 0.004 260)', color: 'oklch(0.52 0.01 260)', background: 'transparent' }
-                  }
-                >
-                  {opt.label}
-                </button>
-              );
-            })}
-          </div>
+        {/* Business model — compact pill row */}
+        <div className="flex gap-1.5">
+          {BUSINESS_MODEL_OPTIONS.map(opt => {
+            const isActive = sharedBusinessModel === opt.value;
+            return (
+              <button
+                key={opt.value}
+                onClick={() => setSharedBusinessModel(opt.value)}
+                className="flex-1 py-1 px-2 rounded-md border text-xs font-medium transition-all"
+                style={
+                  isActive
+                    ? { borderColor: '#45C1BF', background: 'rgba(69,193,191,0.07)', color: '#45C1BF' }
+                    : { borderColor: 'oklch(0.91 0.004 260)', color: 'oklch(0.52 0.01 260)', background: 'transparent' }
+                }
+              >
+                {opt.label}
+              </button>
+            );
+          })}
         </div>
 
-        {/* Monthly volume ladder */}
-        <div>
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-xs text-muted-foreground font-medium">Monthly Volume</p>
-            <span className="text-xs font-semibold text-foreground font-data">
-              {sharedVolume.toLocaleString()}/mo
-            </span>
-          </div>
-          <div className="grid grid-cols-5 gap-1.5">
-            {BASIC_VOLUME_STEPS.map(vol => {
-              const isActive = sharedVolume === vol;
-              return (
-                <button
-                  key={vol}
-                  onClick={() => setSharedVolume(vol)}
-                  className="flex flex-col items-center py-2 px-1 rounded-lg border transition-all"
-                  style={
-                    isActive
-                      ? { borderColor: '#45C1BF', background: 'rgba(69,193,191,0.07)' }
-                      : { borderColor: 'oklch(0.91 0.004 260)', background: 'transparent' }
-                  }
-                >
-                  <span
-                    className="text-xs font-semibold font-data"
-                    style={{ color: isActive ? '#45C1BF' : 'oklch(0.25 0.005 260)' }}
-                  >
-                    {fmtVol(vol)}
-                  </span>
-                  <span className="text-[10px] text-muted-foreground">/mo</span>
-                </button>
-              );
-            })}
-          </div>
+        {/* Monthly volume — inline select */}
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-xs text-muted-foreground font-medium whitespace-nowrap">Monthly Volume</span>
+          <select
+            value={sharedVolume}
+            onChange={e => setSharedVolume(Number(e.target.value))}
+            className="flex-1 text-xs font-semibold font-data rounded-md border border-border bg-background text-foreground px-2 py-1.5 focus:outline-none focus:border-primary/60 transition-colors"
+          >
+            {BASIC_VOLUME_STEPS.map(vol => (
+              <option key={vol} value={vol}>{vol.toLocaleString()} / mo</option>
+            ))}
+          </select>
         </div>
 
         {/* Selling price — transfer */}
         {sharedBusinessModel !== 'garments' && (
-          <div>
-            <div className="flex items-center justify-between mb-1">
-              <p className="text-xs text-muted-foreground font-medium">Selling price / transfer</p>
-              <span className="text-xs font-semibold font-data">${sharedSellingPrice.toFixed(2)}</span>
-            </div>
+          <div className="flex items-center gap-3">
+            <span className="text-xs text-muted-foreground font-medium whitespace-nowrap">Price / transfer</span>
             <input
               type="range"
-              min={1}
-              max={15}
-              step={0.25}
+              min={1} max={15} step={0.25}
               value={sharedSellingPrice}
               onChange={e => setSharedSellingPrice(parseFloat(e.target.value))}
-              className="w-full"
+              className="flex-1"
               style={{
                 background: `linear-gradient(to right, #45C1BF 0%, #45C1BF ${priceSliderPct(sharedSellingPrice)}%, oklch(0.91 0.004 260) ${priceSliderPct(sharedSellingPrice)}%, oklch(0.91 0.004 260) 100%)`,
               }}
             />
+            <span className="text-xs font-semibold font-data w-10 text-right">${sharedSellingPrice.toFixed(2)}</span>
           </div>
         )}
 
         {/* Selling price — shirt */}
         {sharedBusinessModel !== 'transfers' && (
-          <div>
-            <div className="flex items-center justify-between mb-1">
-              <p className="text-xs text-muted-foreground font-medium">Selling price / shirt</p>
-              <span className="text-xs font-semibold font-data">${sharedSellingPricePerShirt.toFixed(2)}</span>
-            </div>
+          <div className="flex items-center gap-3">
+            <span className="text-xs text-muted-foreground font-medium whitespace-nowrap">Price / shirt</span>
             <input
               type="range"
-              min={10}
-              max={50}
-              step={0.5}
+              min={10} max={50} step={0.5}
               value={sharedSellingPricePerShirt}
               onChange={e => setSharedSellingPricePerShirt(parseFloat(e.target.value))}
-              className="w-full"
+              className="flex-1"
               style={{
                 background: `linear-gradient(to right, #45C1BF 0%, #45C1BF ${shirtPriceSliderPct(sharedSellingPricePerShirt)}%, oklch(0.91 0.004 260) ${shirtPriceSliderPct(sharedSellingPricePerShirt)}%, oklch(0.91 0.004 260) 100%)`,
               }}
             />
+            <span className="text-xs font-semibold font-data w-10 text-right">${sharedSellingPricePerShirt.toFixed(2)}</span>
           </div>
         )}
       </div>
