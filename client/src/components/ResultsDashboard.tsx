@@ -261,9 +261,9 @@ export default function ResultsDashboard({ results, inputs, onShare, businessMod
 
   const isProfit = results.monthlyNetProfit > 0;
 
-  // Payback timeline data: prepend month 0 at -downPayment
+  // Payback timeline: start at -totalEquipmentCost, same basis as the Payback Period KPI
   const paybackData = [
-    { month: 0, cumulativeProfit: -results.downPayment },
+    { month: 0, cumulativeProfit: -results.totalEquipmentCost },
     ...results.monthlyChartData.map(d => ({ month: d.month, cumulativeProfit: d.cumulativeProfit })),
   ];
   const paybackCrossMonth = results.monthlyChartData.find(d => d.cumulativeProfit >= 0)?.month;

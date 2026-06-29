@@ -561,7 +561,7 @@ export function calculateROI(inputs: ROIInputs, businessModel: 'transfers' | 'ga
   const profitMargin = monthlyRevenue > 0 ? (monthlyNetProfit / monthlyRevenue) * 100 : 0;
 
   const monthlyChartData = [];
-  let cumulativeProfit = -downPayment;
+  let cumulativeProfit = -totalEquipmentCost;
   let cumulativeRevenue = 0;
 
   for (let m = 1; m <= 36; m++) {
