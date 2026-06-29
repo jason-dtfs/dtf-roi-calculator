@@ -15,10 +15,11 @@ import {
   PRINTER_SHAKER_COMPAT,
   BUNDLE_PRESETS,
   DEFAULT_INPUTS,
+  BASIC_VOLUME_STEPS,
   formatCurrency,
   type ROIInputs,
-  type ROIResults,
 } from '@/lib/roiData';
+import { type BusinessModel, BUSINESS_MODEL_OPTIONS } from '@/components/BusinessInputs';
 import { ArrowLeftRight, ChevronDown, TrendingUp, Clock, DollarSign, BarChart2 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -32,7 +33,7 @@ import {
   ReferenceLine,
 } from 'recharts';
 
-// ─── Preset quick-fill ────────────────────────────────────────────────────────
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const COMPARISON_PRESETS = [
   { label: 'Starter vs Intermediate', a: 'starter', b: 'intermediate' },
@@ -51,8 +52,34 @@ function applyBundle(bundleId: string): ROIInputs {
     heatPressId: bundle.heatPressId,
     cutterId: bundle.cutterId,
     otherEquipmentIds: bundle.otherEquipmentIds,
-    printsPerDay: printer?.dailyOutputDefault ?? DEFAULT_INPUTS.printsPerDay,
+    inkCostPerMonth: printer?.inkCostPreset ?? DEFAULT_INPUTS.inkCostPerMonth,
   };
+}
+
+/** Overlay shared scenario values onto a config's base inputs before passing to calculateROI */
+function makeEffectiveInputs(
+  base: ROIInputs,
+  volume: number,
+  sellingPricePerPrint: number,
+  sellingPricePerShirt: number,
+): ROIInputs {
+  const printer = PRINTERS.find(p => p.id === base.printerId);
+  return {
+    ...base,
+    printsPerDay: Math.max(1, Math.round(volume / base.operatingDaysPerMonth)),
+    sellingPricePerPrint,
+    sellingPricePerShirt,
+    // Always use the printer's recommended ink cost — each machine has a different ink profile
+    inkCostPerMonth: printer?.inkCostPreset ?? base.inkCostPerMonth,
+  };
+}
+
+function fmtVol(v: number): string {
+  if (v >= 1000) {
+    const k = v / 1000;
+    return `${k % 1 === 0 ? k : k.toFixed(1)}k`;
+  }
+  return String(v);
 }
 
 // ─── Machine images ───────────────────────────────────────────────────────────
@@ -134,7 +161,7 @@ function HeatPressThumb({ heatPressId }: { heatPressId: string }) {
   );
 }
 
-// ─── Mini equipment selector ──────────────────────────────────────────────────
+// ─── Mini equipment selector (machine selection only — no per-config scenario inputs) ──
 
 interface MiniSelectorProps {
   inputs: ROIInputs;
@@ -159,7 +186,7 @@ function MiniSelector({ inputs, label, color, onChange }: MiniSelectorProps) {
       ...inputs,
       printerId: id,
       shakerId: compat[0] ?? '',
-      printsPerDay: p?.dailyOutputDefault ?? inputs.printsPerDay,
+      inkCostPerMonth: p?.inkCostPreset ?? inputs.inkCostPerMonth,
       cutterId: null,
       otherEquipmentIds: [],
     });
@@ -191,11 +218,9 @@ function MiniSelector({ inputs, label, color, onChange }: MiniSelectorProps) {
         onClick={() => setOpen(o => !o)}
       >
         <div>
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold uppercase tracking-wide" style={{ color }}>
-              {label}
-            </span>
-          </div>
+          <span className="text-xs font-semibold uppercase tracking-wide" style={{ color }}>
+            {label}
+          </span>
           <p className="text-sm font-semibold text-foreground mt-0.5">
             {printer?.name ?? '—'}{shaker ? ` + ${shaker.name}` : ''}
           </p>
@@ -207,7 +232,7 @@ function MiniSelector({ inputs, label, color, onChange }: MiniSelectorProps) {
         />
       </div>
 
-      {/* Collapsible config */}
+      {/* Collapsible equipment config */}
       {open && (
         <div className="px-4 pb-4 space-y-3 border-t border-border bg-muted/20">
           {/* Bundle quick-fill */}
@@ -294,46 +319,6 @@ function MiniSelector({ inputs, label, color, onChange }: MiniSelectorProps) {
               ))}
             </div>
           </div>
-
-          {/* Prints per day */}
-          <div>
-            <div className="flex items-center justify-between mb-1">
-              <p className="text-xs text-muted-foreground font-medium">Prints per day</p>
-              <span className="text-xs font-semibold font-data">{inputs.printsPerDay} pcs</span>
-            </div>
-            <input
-              type="range"
-              min={10}
-              max={PRINTERS.find(p => p.id === inputs.printerId)?.dailyOutputMax ?? 1440}
-              step={10}
-              value={inputs.printsPerDay}
-              onChange={e => onChange({ ...inputs, printsPerDay: parseInt(e.target.value) })}
-              className="w-full"
-              style={{
-                background: `linear-gradient(to right, ${color} 0%, ${color} ${((inputs.printsPerDay - 10) / ((PRINTERS.find(p => p.id === inputs.printerId)?.dailyOutputMax ?? 1440) - 10)) * 100}%, oklch(0.91 0.004 260) ${((inputs.printsPerDay - 10) / ((PRINTERS.find(p => p.id === inputs.printerId)?.dailyOutputMax ?? 1440) - 10)) * 100}%, oklch(0.91 0.004 260) 100%)`,
-              }}
-            />
-          </div>
-
-          {/* Selling price */}
-          <div>
-            <div className="flex items-center justify-between mb-1">
-              <p className="text-xs text-muted-foreground font-medium">Selling price / print</p>
-              <span className="text-xs font-semibold font-data">${inputs.sellingPricePerPrint.toFixed(2)}</span>
-            </div>
-            <input
-              type="range"
-              min={1}
-              max={15}
-              step={0.25}
-              value={inputs.sellingPricePerPrint}
-              onChange={e => onChange({ ...inputs, sellingPricePerPrint: parseFloat(e.target.value) })}
-              className="w-full"
-              style={{
-                background: `linear-gradient(to right, ${color} 0%, ${color} ${((inputs.sellingPricePerPrint - 1) / 14) * 100}%, oklch(0.91 0.004 260) ${((inputs.sellingPricePerPrint - 1) / 14) * 100}%, oklch(0.91 0.004 260) 100%)`,
-              }}
-            />
-          </div>
         </div>
       )}
     </div>
@@ -396,11 +381,28 @@ const COLOR_A = '#45C1BF';
 const COLOR_B = '#6366F1';
 
 export default function ComparisonMode() {
+  // Equipment configs — only machine selection, no per-config scenario
   const [inputsA, setInputsA] = useState<ROIInputs>(applyBundle('starter'));
   const [inputsB, setInputsB] = useState<ROIInputs>(applyBundle('intermediate'));
 
-  const resultsA = useMemo(() => calculateROI(inputsA), [inputsA]);
-  const resultsB = useMemo(() => calculateROI(inputsB), [inputsB]);
+  // Shared scenario — both configs evaluated at the same values
+  const [sharedVolume, setSharedVolume] = useState<number>(1000);
+  const [sharedBusinessModel, setSharedBusinessModel] = useState<BusinessModel>('transfers');
+  const [sharedSellingPrice, setSharedSellingPrice] = useState<number>(4.50);
+  const [sharedSellingPricePerShirt, setSharedSellingPricePerShirt] = useState<number>(18);
+
+  // Merge shared scenario into each config's inputs before running calculateROI
+  const effectiveA = useMemo(
+    () => makeEffectiveInputs(inputsA, sharedVolume, sharedSellingPrice, sharedSellingPricePerShirt),
+    [inputsA, sharedVolume, sharedSellingPrice, sharedSellingPricePerShirt],
+  );
+  const effectiveB = useMemo(
+    () => makeEffectiveInputs(inputsB, sharedVolume, sharedSellingPrice, sharedSellingPricePerShirt),
+    [inputsB, sharedVolume, sharedSellingPrice, sharedSellingPricePerShirt],
+  );
+
+  const resultsA = useMemo(() => calculateROI(effectiveA, sharedBusinessModel), [effectiveA, sharedBusinessModel]);
+  const resultsB = useMemo(() => calculateROI(effectiveB, sharedBusinessModel), [effectiveB, sharedBusinessModel]);
 
   const handlePreset = useCallback((presetIdx: number) => {
     const p = COMPARISON_PRESETS[presetIdx];
@@ -408,7 +410,6 @@ export default function ComparisonMode() {
     setInputsB(applyBundle(p.b));
   }, []);
 
-  // Merge chart data
   const chartData = useMemo(() => {
     return resultsA.monthlyChartData.map((d, i) => ({
       month: d.month,
@@ -420,6 +421,9 @@ export default function ComparisonMode() {
 
   const printerA = PRINTERS.find(p => p.id === inputsA.printerId);
   const printerB = PRINTERS.find(p => p.id === inputsB.printerId);
+
+  const priceSliderPct = (v: number) => ((v - 1) / 14) * 100;
+  const shirtPriceSliderPct = (v: number) => ((v - 10) / 40) * 100;
 
   return (
     <div className="space-y-4">
@@ -445,7 +449,118 @@ export default function ComparisonMode() {
         </div>
       </div>
 
-      {/* Config A & B */}
+      {/* ── Shared Scenario Controls ─────────────────────────────────────────── */}
+      <div className="section-card space-y-4">
+        <div>
+          <h3 className="text-sm font-semibold text-foreground">Shared Scenario</h3>
+          <p className="text-xs text-muted-foreground mt-0.5">Both configurations are evaluated at these same values.</p>
+        </div>
+
+        {/* Business model */}
+        <div>
+          <p className="text-xs text-muted-foreground mb-2 font-medium">Business Model</p>
+          <div className="flex gap-1.5">
+            {BUSINESS_MODEL_OPTIONS.map(opt => {
+              const isActive = sharedBusinessModel === opt.value;
+              return (
+                <button
+                  key={opt.value}
+                  onClick={() => setSharedBusinessModel(opt.value)}
+                  className="flex-1 py-2 px-2 rounded-lg border text-xs font-medium transition-all"
+                  style={
+                    isActive
+                      ? { borderColor: '#45C1BF', background: 'rgba(69,193,191,0.07)', color: '#45C1BF' }
+                      : { borderColor: 'oklch(0.91 0.004 260)', color: 'oklch(0.52 0.01 260)', background: 'transparent' }
+                  }
+                >
+                  {opt.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Monthly volume ladder */}
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-xs text-muted-foreground font-medium">Monthly Volume</p>
+            <span className="text-xs font-semibold text-foreground font-data">
+              {sharedVolume.toLocaleString()}/mo
+            </span>
+          </div>
+          <div className="grid grid-cols-5 gap-1.5">
+            {BASIC_VOLUME_STEPS.map(vol => {
+              const isActive = sharedVolume === vol;
+              return (
+                <button
+                  key={vol}
+                  onClick={() => setSharedVolume(vol)}
+                  className="flex flex-col items-center py-2 px-1 rounded-lg border transition-all"
+                  style={
+                    isActive
+                      ? { borderColor: '#45C1BF', background: 'rgba(69,193,191,0.07)' }
+                      : { borderColor: 'oklch(0.91 0.004 260)', background: 'transparent' }
+                  }
+                >
+                  <span
+                    className="text-xs font-semibold font-data"
+                    style={{ color: isActive ? '#45C1BF' : 'oklch(0.25 0.005 260)' }}
+                  >
+                    {fmtVol(vol)}
+                  </span>
+                  <span className="text-[10px] text-muted-foreground">/mo</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Selling price — transfer */}
+        {sharedBusinessModel !== 'garments' && (
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <p className="text-xs text-muted-foreground font-medium">Selling price / transfer</p>
+              <span className="text-xs font-semibold font-data">${sharedSellingPrice.toFixed(2)}</span>
+            </div>
+            <input
+              type="range"
+              min={1}
+              max={15}
+              step={0.25}
+              value={sharedSellingPrice}
+              onChange={e => setSharedSellingPrice(parseFloat(e.target.value))}
+              className="w-full"
+              style={{
+                background: `linear-gradient(to right, #45C1BF 0%, #45C1BF ${priceSliderPct(sharedSellingPrice)}%, oklch(0.91 0.004 260) ${priceSliderPct(sharedSellingPrice)}%, oklch(0.91 0.004 260) 100%)`,
+              }}
+            />
+          </div>
+        )}
+
+        {/* Selling price — shirt */}
+        {sharedBusinessModel !== 'transfers' && (
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <p className="text-xs text-muted-foreground font-medium">Selling price / shirt</p>
+              <span className="text-xs font-semibold font-data">${sharedSellingPricePerShirt.toFixed(2)}</span>
+            </div>
+            <input
+              type="range"
+              min={10}
+              max={50}
+              step={0.5}
+              value={sharedSellingPricePerShirt}
+              onChange={e => setSharedSellingPricePerShirt(parseFloat(e.target.value))}
+              className="w-full"
+              style={{
+                background: `linear-gradient(to right, #45C1BF 0%, #45C1BF ${shirtPriceSliderPct(sharedSellingPricePerShirt)}%, oklch(0.91 0.004 260) ${shirtPriceSliderPct(sharedSellingPricePerShirt)}%, oklch(0.91 0.004 260) 100%)`,
+              }}
+            />
+          </div>
+        )}
+      </div>
+
+      {/* Config A & B machine selectors */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <MiniSelector inputs={inputsA} label="Configuration A" color={COLOR_A} onChange={setInputsA} />
         <MiniSelector inputs={inputsB} label="Configuration B" color={COLOR_B} onChange={setInputsB} />
