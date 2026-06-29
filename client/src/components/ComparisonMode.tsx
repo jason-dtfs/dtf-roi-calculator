@@ -424,7 +424,7 @@ export default function ComparisonMode() {
       {/* ── Shared Scenario Controls ─────────────────────────────────────────── */}
       <div className="section-card space-y-2.5">
         <div className="flex items-baseline justify-between">
-          <h3 className="text-sm font-semibold text-foreground">Shared Scenario</h3>
+          <h3 className="text-sm font-semibold text-foreground">Business Overview</h3>
           <span className="text-[11px] text-muted-foreground">same values for both configs</span>
         </div>
 
@@ -449,18 +449,22 @@ export default function ComparisonMode() {
           })}
         </div>
 
-        {/* Monthly volume — inline select */}
-        <div className="flex items-center justify-between gap-3">
+        {/* Monthly volume — 10-stop index slider */}
+        <div className="flex items-center gap-3">
           <span className="text-xs text-muted-foreground font-medium whitespace-nowrap">Monthly Volume</span>
-          <select
-            value={sharedVolume}
-            onChange={e => setSharedVolume(Number(e.target.value))}
-            className="flex-1 text-xs font-semibold font-data rounded-md border border-border bg-background text-foreground px-2 py-1.5 focus:outline-none focus:border-primary/60 transition-colors"
-          >
-            {BASIC_VOLUME_STEPS.map(vol => (
-              <option key={vol} value={vol}>{vol.toLocaleString()} / mo</option>
-            ))}
-          </select>
+          <input
+            type="range"
+            min={0}
+            max={BASIC_VOLUME_STEPS.length - 1}
+            step={1}
+            value={BASIC_VOLUME_STEPS.indexOf(sharedVolume)}
+            onChange={e => setSharedVolume(BASIC_VOLUME_STEPS[Number(e.target.value)])}
+            className="flex-1"
+            style={{
+              background: `linear-gradient(to right, #45C1BF 0%, #45C1BF ${(BASIC_VOLUME_STEPS.indexOf(sharedVolume) / (BASIC_VOLUME_STEPS.length - 1)) * 100}%, oklch(0.91 0.004 260) ${(BASIC_VOLUME_STEPS.indexOf(sharedVolume) / (BASIC_VOLUME_STEPS.length - 1)) * 100}%, oklch(0.91 0.004 260) 100%)`,
+            }}
+          />
+          <span className="text-xs font-semibold font-data w-16 text-right">{sharedVolume.toLocaleString()} /mo</span>
         </div>
 
         {/* Selling price — transfer */}
