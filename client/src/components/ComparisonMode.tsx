@@ -464,7 +464,7 @@ export default function ComparisonMode() {
               background: `linear-gradient(to right, #45C1BF 0%, #45C1BF ${(BASIC_VOLUME_STEPS.indexOf(sharedVolume) / (BASIC_VOLUME_STEPS.length - 1)) * 100}%, oklch(0.91 0.004 260) ${(BASIC_VOLUME_STEPS.indexOf(sharedVolume) / (BASIC_VOLUME_STEPS.length - 1)) * 100}%, oklch(0.91 0.004 260) 100%)`,
             }}
           />
-          <span className="text-xs font-semibold font-data w-16 text-right">{sharedVolume.toLocaleString()} /mo</span>
+          <span className="text-xs font-semibold font-data w-20 text-right whitespace-nowrap">{sharedVolume.toLocaleString()} /mo</span>
         </div>
 
         {/* Selling price — transfer */}
