@@ -540,6 +540,9 @@ export default function Home() {
           <p className="text-xs text-muted-foreground">
             Results are projections based on your inputs. Actual results may vary.
           </p>
+          <p className="text-xs text-muted-foreground">
+            Equipment prices are estimates and subject to change. Contact a dealer for current pricing.
+          </p>
         </div>
       </footer>
     </div>

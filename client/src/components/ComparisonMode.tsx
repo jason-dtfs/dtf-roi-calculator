@@ -703,13 +703,6 @@ export default function ComparisonMode() {
           colorA={COLOR_A} colorB={COLOR_B}
         />
         <SpecRow
-          label="Heat Press Max Temp"
-          valueA={heatPressA?.specs?.maxTemp ?? '—'}
-          valueB={heatPressB?.specs?.maxTemp ?? '—'}
-          winner={null}
-          colorA={COLOR_A} colorB={COLOR_B}
-        />
-        <SpecRow
           label="Heat Press Type"
           valueA={heatPressA?.specs?.type ?? '—'}
           valueB={heatPressB?.specs?.type ?? '—'}
@@ -752,6 +745,11 @@ export default function ComparisonMode() {
           </LineChart>
         </ResponsiveContainer>
       </div>
+
+      {/* Pricing disclaimer */}
+      <p className="text-[11px] text-muted-foreground text-center px-2">
+        Equipment prices are estimates and subject to change. Contact a dealer for current pricing.
+      </p>
 
       {/* CTA */}
       <div className="section-card text-center space-y-2">
