@@ -423,6 +423,7 @@ export default function ComparisonMode() {
   const [inputsB, setInputsB] = useState<ROIInputs>(applyBundle('intermediate'));
 
   // Shared scenario — both configs evaluated at the same values
+  const [businessOverviewOpen, setBusinessOverviewOpen] = useState(false);
   const [sharedVolume, setSharedVolume] = useState<number>(1000);
   const [sharedBusinessModel, setSharedBusinessModel] = useState<BusinessModel>('transfers');
   const [sharedSellingPrice, setSharedSellingPrice] = useState<number>(4.50);
@@ -468,93 +469,119 @@ export default function ComparisonMode() {
         <h2 className="text-base font-bold text-foreground">Comparison Mode</h2>
       </div>
 
-      {/* ── Shared Scenario Controls ─────────────────────────────────────────── */}
-      <div className="section-card space-y-2.5">
-        <div className="flex items-baseline justify-between">
-          <h3 className="text-sm font-semibold text-foreground">Business Overview</h3>
-          <span className="text-[11px] text-muted-foreground">same values for both configs</span>
-        </div>
-
-        {/* Business model — compact pill row */}
-        <div className="flex gap-1.5">
-          {BUSINESS_MODEL_OPTIONS.map(opt => {
-            const isActive = sharedBusinessModel === opt.value;
-            return (
-              <button
-                key={opt.value}
-                onClick={() => setSharedBusinessModel(opt.value)}
-                className="flex-1 py-1 px-2 rounded-md border text-xs font-medium transition-all"
-                style={
-                  isActive
-                    ? { borderColor: '#45C1BF', background: 'rgba(69,193,191,0.07)', color: '#45C1BF' }
-                    : { borderColor: 'oklch(0.91 0.004 260)', color: 'oklch(0.52 0.01 260)', background: 'transparent' }
-                }
-              >
-                {opt.label}
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Monthly volume — 10-stop index slider */}
-        <div className="flex items-center gap-3">
-          <span className="text-xs text-muted-foreground font-medium whitespace-nowrap">Monthly Volume</span>
-          <input
-            type="range"
-            min={0}
-            max={BASIC_VOLUME_STEPS.length - 1}
-            step={1}
-            value={BASIC_VOLUME_STEPS.indexOf(sharedVolume)}
-            onChange={e => setSharedVolume(BASIC_VOLUME_STEPS[Number(e.target.value)])}
-            className="flex-1"
-            style={{
-              background: `linear-gradient(to right, #45C1BF 0%, #45C1BF ${(BASIC_VOLUME_STEPS.indexOf(sharedVolume) / (BASIC_VOLUME_STEPS.length - 1)) * 100}%, oklch(0.91 0.004 260) ${(BASIC_VOLUME_STEPS.indexOf(sharedVolume) / (BASIC_VOLUME_STEPS.length - 1)) * 100}%, oklch(0.91 0.004 260) 100%)`,
-            }}
-          />
-          <span className="text-xs font-semibold font-data w-20 text-right whitespace-nowrap">{sharedVolume.toLocaleString()} /mo</span>
-        </div>
-
-        {/* Selling price — transfer */}
-        {sharedBusinessModel !== 'garments' && (
-          <div className="flex items-center gap-3">
-            <span className="text-xs text-muted-foreground font-medium whitespace-nowrap">Price / transfer</span>
-            <input
-              type="range"
-              min={1} max={15} step={0.25}
-              value={sharedSellingPrice}
-              onChange={e => setSharedSellingPrice(parseFloat(e.target.value))}
-              className="flex-1"
-              style={{
-                background: `linear-gradient(to right, #45C1BF 0%, #45C1BF ${priceSliderPct(sharedSellingPrice)}%, oklch(0.91 0.004 260) ${priceSliderPct(sharedSellingPrice)}%, oklch(0.91 0.004 260) 100%)`,
-              }}
-            />
-            <span className="text-xs font-semibold font-data w-10 text-right">${sharedSellingPrice.toFixed(2)}</span>
-          </div>
-        )}
-
-        {/* Selling price — shirt */}
-        {sharedBusinessModel !== 'transfers' && (
-          <div className="flex items-center gap-3">
-            <span className="text-xs text-muted-foreground font-medium whitespace-nowrap">Price / shirt</span>
-            <input
-              type="range"
-              min={10} max={50} step={0.5}
-              value={sharedSellingPricePerShirt}
-              onChange={e => setSharedSellingPricePerShirt(parseFloat(e.target.value))}
-              className="flex-1"
-              style={{
-                background: `linear-gradient(to right, #45C1BF 0%, #45C1BF ${shirtPriceSliderPct(sharedSellingPricePerShirt)}%, oklch(0.91 0.004 260) ${shirtPriceSliderPct(sharedSellingPricePerShirt)}%, oklch(0.91 0.004 260) 100%)`,
-              }}
-            />
-            <span className="text-xs font-semibold font-data w-10 text-right">${sharedSellingPricePerShirt.toFixed(2)}</span>
-          </div>
-        )}
-      </div>
-
       {/* Config A & B machine selectors */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <MiniSelector inputs={inputsA} label="Configuration A" color={COLOR_A} onChange={setInputsA} />
         <MiniSelector inputs={inputsB} label="Configuration B" color={COLOR_B} onChange={setInputsB} />
+      </div>
+
+      {/* ── Business Overview — collapsible, defaults collapsed ──────────────── */}
+      <div className="section-card">
+        {/* Always-visible header / summary row */}
+        <button
+          className="w-full flex items-center justify-between gap-2 text-left"
+          onClick={() => setBusinessOverviewOpen(o => !o)}
+        >
+          <div className="flex items-center gap-2 min-w-0">
+            <h3 className="text-sm font-semibold text-foreground shrink-0">Business Overview</h3>
+            {!businessOverviewOpen && (
+              <span className="text-[11px] text-muted-foreground truncate">
+                {BUSINESS_MODEL_OPTIONS.find(o => o.value === sharedBusinessModel)?.label}
+                {' · '}{sharedVolume.toLocaleString()}/mo
+                {sharedBusinessModel !== 'garments' && ` · $${sharedSellingPrice.toFixed(2)}/transfer`}
+                {sharedBusinessModel !== 'transfers' && ` · $${sharedSellingPricePerShirt.toFixed(2)}/shirt`}
+              </span>
+            )}
+          </div>
+          <ChevronDown
+            className="w-4 h-4 text-muted-foreground shrink-0 transition-transform duration-200"
+            style={{ transform: businessOverviewOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}
+          />
+        </button>
+
+        {/* Expanded controls */}
+        {businessOverviewOpen && (
+          <div className="space-y-2.5 mt-3 pt-3 border-t border-border">
+            <div className="flex items-baseline justify-between">
+              <span className="text-[11px] text-muted-foreground">same values for both configs</span>
+            </div>
+
+            {/* Business model — compact pill row */}
+            <div className="flex gap-1.5">
+              {BUSINESS_MODEL_OPTIONS.map(opt => {
+                const isActive = sharedBusinessModel === opt.value;
+                return (
+                  <button
+                    key={opt.value}
+                    onClick={() => setSharedBusinessModel(opt.value)}
+                    className="flex-1 py-1 px-2 rounded-md border text-xs font-medium transition-all"
+                    style={
+                      isActive
+                        ? { borderColor: '#45C1BF', background: 'rgba(69,193,191,0.07)', color: '#45C1BF' }
+                        : { borderColor: 'oklch(0.91 0.004 260)', color: 'oklch(0.52 0.01 260)', background: 'transparent' }
+                    }
+                  >
+                    {opt.label}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Monthly volume — 10-stop index slider */}
+            <div className="flex items-center gap-3">
+              <span className="text-xs text-muted-foreground font-medium whitespace-nowrap">Monthly Volume</span>
+              <input
+                type="range"
+                min={0}
+                max={BASIC_VOLUME_STEPS.length - 1}
+                step={1}
+                value={BASIC_VOLUME_STEPS.indexOf(sharedVolume)}
+                onChange={e => setSharedVolume(BASIC_VOLUME_STEPS[Number(e.target.value)])}
+                className="flex-1"
+                style={{
+                  background: `linear-gradient(to right, #45C1BF 0%, #45C1BF ${(BASIC_VOLUME_STEPS.indexOf(sharedVolume) / (BASIC_VOLUME_STEPS.length - 1)) * 100}%, oklch(0.91 0.004 260) ${(BASIC_VOLUME_STEPS.indexOf(sharedVolume) / (BASIC_VOLUME_STEPS.length - 1)) * 100}%, oklch(0.91 0.004 260) 100%)`,
+                }}
+              />
+              <span className="text-xs font-semibold font-data w-20 text-right whitespace-nowrap">{sharedVolume.toLocaleString()} /mo</span>
+            </div>
+
+            {/* Selling price — transfer */}
+            {sharedBusinessModel !== 'garments' && (
+              <div className="flex items-center gap-3">
+                <span className="text-xs text-muted-foreground font-medium whitespace-nowrap">Price / transfer</span>
+                <input
+                  type="range"
+                  min={1} max={15} step={0.25}
+                  value={sharedSellingPrice}
+                  onChange={e => setSharedSellingPrice(parseFloat(e.target.value))}
+                  className="flex-1"
+                  style={{
+                    background: `linear-gradient(to right, #45C1BF 0%, #45C1BF ${priceSliderPct(sharedSellingPrice)}%, oklch(0.91 0.004 260) ${priceSliderPct(sharedSellingPrice)}%, oklch(0.91 0.004 260) 100%)`,
+                  }}
+                />
+                <span className="text-xs font-semibold font-data w-10 text-right">${sharedSellingPrice.toFixed(2)}</span>
+              </div>
+            )}
+
+            {/* Selling price — shirt */}
+            {sharedBusinessModel !== 'transfers' && (
+              <div className="flex items-center gap-3">
+                <span className="text-xs text-muted-foreground font-medium whitespace-nowrap">Price / shirt</span>
+                <input
+                  type="range"
+                  min={10} max={50} step={0.5}
+                  value={sharedSellingPricePerShirt}
+                  onChange={e => setSharedSellingPricePerShirt(parseFloat(e.target.value))}
+                  className="flex-1"
+                  style={{
+                    background: `linear-gradient(to right, #45C1BF 0%, #45C1BF ${shirtPriceSliderPct(sharedSellingPricePerShirt)}%, oklch(0.91 0.004 260) ${shirtPriceSliderPct(sharedSellingPricePerShirt)}%, oklch(0.91 0.004 260) 100%)`,
+                  }}
+                />
+                <span className="text-xs font-semibold font-data w-10 text-right">${sharedSellingPricePerShirt.toFixed(2)}</span>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Column headers */}
