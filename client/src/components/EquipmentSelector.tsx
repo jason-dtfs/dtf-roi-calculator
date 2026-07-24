@@ -241,8 +241,8 @@ export default function EquipmentSelector({
       {/* ── Bundle Presets ── */}
       <div className="section-card">
         <div className="flex items-center gap-2 mb-3">
-          <div className="w-7 h-7 rounded-md flex items-center justify-center" style={{ background: 'rgba(69,193,191,0.1)' }}>
-            <Sparkles className="w-3.5 h-3.5" style={{ color: '#45C1BF' }} />
+          <div className="w-7 h-7 rounded-md flex items-center justify-center" style={{ background: 'var(--gold)' }}>
+            <Sparkles className="w-3.5 h-3.5" style={{ color: '#0d3534' }} />
           </div>
           <span className="text-sm font-semibold text-foreground">Bundle Presets</span>
           <span className="text-xs text-muted-foreground">· Quick-start configurations</span>
@@ -257,7 +257,7 @@ export default function EquipmentSelector({
                 className="rounded-lg border px-2.5 py-2.5 text-left transition-all"
                 style={
                   isActive
-                    ? { borderColor: '#45C1BF', background: 'rgba(69,193,191,0.07)' }
+                    ? { borderColor: '#49C1BE', background: 'rgba(73,193,190,0.07)' }
                     : { borderColor: 'oklch(0.91 0.004 260)', background: 'white' }
                 }
               >
@@ -304,7 +304,7 @@ export default function EquipmentSelector({
           sub={usingAlternativeFinishing ? '· Optional (using alternative finishing)' : '· Compatible with selected printer'}
         />
         {isSmallFormat && (
-          <div className="mb-3 px-3 py-2 rounded-lg text-xs" style={{ background: 'rgba(69,193,191,0.06)', borderLeft: '3px solid #45C1BF', color: '#1a7a78' }}>
+          <div className="mb-3 px-3 py-2 rounded-lg text-xs" style={{ background: 'rgba(73,193,190,0.06)', borderLeft: '3px solid #49C1BE', color: '#1a7a78' }}>
             <strong>Miro 13 Max</strong> is the recommended all-in-one shaker for R1/R2 Pro. If you prefer a lower-cost sheet-based workflow, skip this and select options in <strong>Other Equipment</strong> below.
           </div>
         )}
@@ -392,7 +392,7 @@ export default function EquipmentSelector({
         <button
           onClick={onContinue}
           className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold hover:opacity-90 transition-opacity"
-          style={{ background: '#45C1BF', color: '#0d3534' }}
+          style={{ background: '#49C1BE', color: '#0d3534' }}
         >
           Configure Business Parameters
           <ChevronRight className="w-4 h-4" />

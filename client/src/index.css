@@ -3,7 +3,7 @@
  * Philosophy: Clean Minimalism
  * - Light background, generous whitespace, subtle borders
  * - Poppins as the sole typeface across all weights
- * - Accent: DTF Station teal (#45C1BF ≈ oklch 0.72 0.12 192) — used sparingly
+ * - Accent: DTF Station teal (#49C1BE ≈ oklch 0.72 0.12 192) — used sparingly
  * - No heavy shadows, no gradients, no dark backgrounds
  * - Data rendered in tabular figures for alignment
  */
@@ -42,6 +42,7 @@
   --color-chart-3: var(--chart-3);
   --color-chart-4: var(--chart-4);
   --color-chart-5: var(--chart-5);
+  --color-gold: var(--gold);
   --color-sidebar: var(--sidebar);
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar-primary: var(--sidebar-primary);
@@ -55,9 +56,12 @@
 :root {
   --radius: 0.5rem;
 
-  /* DTF Station teal accent #45C1BF */
-  --primary: oklch(0.72 0.12 192);
+  /* DTF Station teal accent #49C1BE */
+  --primary: #49C1BE;
   --primary-foreground: oklch(0.1 0.02 192);
+
+  /* Brand gold/cream — warm secondary accent, used tastefully */
+  --gold: #FDCD81;
 
   /* Neutral light palette */
   --background: oklch(0.99 0 0);
@@ -83,10 +87,10 @@
 
   --border: oklch(0.91 0.004 260);
   --input: oklch(0.91 0.004 260);
-  --ring: oklch(0.72 0.12 192 / 0.35);
+  --ring: rgba(73,193,190,0.35);
 
   /* Charts — teal primary, warm secondaries */
-  --chart-1: oklch(0.72 0.12 192);
+  --chart-1: #49C1BE;
   --chart-2: oklch(0.62 0.18 160);
   --chart-3: oklch(0.72 0.16 55);
   --chart-4: oklch(0.58 0.18 300);
@@ -94,12 +98,12 @@
 
   --sidebar: oklch(0.98 0 0);
   --sidebar-foreground: oklch(0.15 0.005 260);
-  --sidebar-primary: oklch(0.72 0.12 192);
+  --sidebar-primary: #49C1BE;
   --sidebar-primary-foreground: oklch(0.1 0.02 192);
   --sidebar-accent: oklch(0.96 0.003 260);
   --sidebar-accent-foreground: oklch(0.15 0.005 260);
   --sidebar-border: oklch(0.91 0.004 260);
-  --sidebar-ring: oklch(0.72 0.12 192 / 0.35);
+  --sidebar-ring: rgba(73,193,190,0.35);
 }
 
 @layer base {
@@ -176,9 +180,9 @@
     width: 16px;
     height: 16px;
     border-radius: 50%;
-    background: #45C1BF;
+    background: #49C1BE;
     border: 2.5px solid white;
-    box-shadow: 0 0 0 1px rgba(69,193,191,0.4), 0 1px 3px rgba(0,0,0,0.15);
+    box-shadow: 0 0 0 1px rgba(73,193,190,0.4), 0 1px 3px rgba(0,0,0,0.15);
     transition: transform 0.15s ease;
   }
   input[type="range"]::-webkit-slider-thumb:hover {
@@ -188,9 +192,9 @@
     width: 16px;
     height: 16px;
     border-radius: 50%;
-    background: #45C1BF;
+    background: #49C1BE;
     border: 2.5px solid white;
-    box-shadow: 0 0 0 1px rgba(69,193,191,0.4);
+    box-shadow: 0 0 0 1px rgba(73,193,190,0.4);
     cursor: pointer;
   }
 

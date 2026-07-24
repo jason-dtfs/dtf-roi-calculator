@@ -78,17 +78,17 @@ export default function BasicMode({
                 className="w-full text-left flex items-center justify-between px-3.5 py-3 rounded-lg border transition-all"
                 style={
                   isSelected
-                    ? { borderColor: '#45C1BF', background: 'rgba(69,193,191,0.07)' }
+                    ? { borderColor: '#49C1BE', background: 'rgba(73,193,190,0.07)' }
                     : { borderColor: 'oklch(0.91 0.004 260)', background: 'transparent' }
                 }
               >
                 <div className="flex items-center gap-3 min-w-0">
                   <div
                     className="w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center"
-                    style={{ borderColor: isSelected ? '#45C1BF' : 'oklch(0.7 0.004 260)' }}
+                    style={{ borderColor: isSelected ? '#49C1BE' : 'oklch(0.7 0.004 260)' }}
                   >
                     {isSelected && (
-                      <div className="w-1.5 h-1.5 rounded-full" style={{ background: '#45C1BF' }} />
+                      <div className="w-1.5 h-1.5 rounded-full" style={{ background: '#49C1BE' }} />
                     )}
                   </div>
                   <div className="min-w-0">
@@ -123,17 +123,17 @@ export default function BasicMode({
                 className="w-full text-left px-3.5 py-3 rounded-lg border transition-all"
                 style={
                   isActive
-                    ? { borderColor: '#45C1BF', background: 'rgba(69,193,191,0.07)' }
+                    ? { borderColor: '#49C1BE', background: 'rgba(73,193,190,0.07)' }
                     : { borderColor: 'oklch(0.91 0.004 260)', background: 'transparent' }
                 }
               >
                 <div className="flex items-center gap-3">
                   <div
                     className="w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center"
-                    style={{ borderColor: isActive ? '#45C1BF' : 'oklch(0.7 0.004 260)' }}
+                    style={{ borderColor: isActive ? '#49C1BE' : 'oklch(0.7 0.004 260)' }}
                   >
                     {isActive && (
-                      <div className="w-1.5 h-1.5 rounded-full" style={{ background: '#45C1BF' }} />
+                      <div className="w-1.5 h-1.5 rounded-full" style={{ background: '#49C1BE' }} />
                     )}
                   </div>
                   <div>
@@ -170,13 +170,13 @@ export default function BasicMode({
                   isDisabled
                     ? { borderColor: 'oklch(0.91 0.004 260)', background: 'transparent', opacity: 0.35, cursor: 'not-allowed' }
                     : isActive
-                    ? { borderColor: '#45C1BF', background: 'rgba(69,193,191,0.07)' }
+                    ? { borderColor: '#49C1BE', background: 'rgba(73,193,190,0.07)' }
                     : { borderColor: 'oklch(0.91 0.004 260)', background: 'transparent' }
                 }
               >
                 <span
                   className="text-xs font-semibold font-data"
-                  style={{ color: isActive && !isDisabled ? '#45C1BF' : 'oklch(0.25 0.005 260)' }}
+                  style={{ color: isActive && !isDisabled ? '#49C1BE' : 'oklch(0.25 0.005 260)' }}
                 >
                   {formatVol(vol)}
                 </span>

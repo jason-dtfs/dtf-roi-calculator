@@ -1,6 +1,6 @@
 /**
  * Home — DTF Station ROI Calculator
- * Design: Clean Minimal — white/off-white, Poppins, teal (#45C1BF) accent
+ * Design: Clean Minimal — white/off-white, Poppins, teal (#49C1BE) accent
  * Features:
  *  - URL query-param sync for shareable links
  *  - Comparison mode (side-by-side two configs)
@@ -314,7 +314,7 @@ export default function Home() {
       {/* Page header */}
       <div className="border-b border-border bg-white">
         <div className="container py-6 sm:py-8">
-          <p className="text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: '#45C1BF' }}>
+          <p className="text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: '#49C1BE' }}>
             DTF Station North America
           </p>
           <div className="flex items-start justify-between gap-4 flex-wrap">
@@ -382,7 +382,7 @@ export default function Home() {
                   className={`flex items-center gap-1.5 px-5 py-2.5 text-sm font-medium transition-colors ${
                     uiMode !== 'basic' ? 'text-muted-foreground hover:text-foreground hover:bg-muted/40' : ''
                   }`}
-                  style={uiMode === 'basic' ? { background: '#45C1BF', color: '#0d3534' } : {}}
+                  style={uiMode === 'basic' ? { background: '#49C1BE', color: '#0d3534' } : {}}
                 >
                   Basic
                 </button>
@@ -391,7 +391,7 @@ export default function Home() {
                   className={`flex items-center gap-1.5 px-5 py-2.5 text-sm font-medium transition-colors border-l border-border ${
                     uiMode !== 'advanced' ? 'text-muted-foreground hover:text-foreground hover:bg-muted/40' : ''
                   }`}
-                  style={uiMode === 'advanced' ? { background: '#45C1BF', color: '#0d3534' } : {}}
+                  style={uiMode === 'advanced' ? { background: '#49C1BE', color: '#0d3534' } : {}}
                 >
                   Advanced
                 </button>
@@ -424,7 +424,7 @@ export default function Home() {
                       <button
                         onClick={scrollToResults}
                         className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold transition-opacity hover:opacity-90"
-                        style={{ background: '#45C1BF', color: '#0d3534' }}
+                        style={{ background: '#49C1BE', color: '#0d3534' }}
                       >
                         <ChevronUp className="w-4 h-4" />
                         View ROI Results
@@ -449,9 +449,9 @@ export default function Home() {
                             }`}
                             style={
                               isActive
-                                ? { background: '#45C1BF', color: '#0d3534' }
+                                ? { background: '#49C1BE', color: '#0d3534' }
                                 : isDone
-                                ? { color: '#45C1BF' }
+                                ? { color: '#49C1BE' }
                                 : {}
                             }
                           >
@@ -463,7 +463,7 @@ export default function Home() {
                                 isActive
                                   ? { background: 'rgba(0,0,0,0.1)', color: '#0d3534' }
                                   : isDone
-                                  ? { background: 'rgba(69,193,191,0.12)', color: '#45C1BF' }
+                                  ? { background: 'rgba(73,193,190,0.12)', color: '#49C1BE' }
                                   : {}
                               }
                             >
@@ -512,7 +512,7 @@ export default function Home() {
                       <button
                         onClick={scrollToResults}
                         className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold transition-opacity hover:opacity-90"
-                        style={{ background: '#45C1BF', color: '#0d3534' }}
+                        style={{ background: '#49C1BE', color: '#0d3534' }}
                       >
                         <ChevronUp className="w-4 h-4" />
                         View ROI Results

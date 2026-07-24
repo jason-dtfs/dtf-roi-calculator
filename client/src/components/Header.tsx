@@ -1,7 +1,7 @@
 /**
  * Header — DTF Station ROI Calculator
  * Clean minimal: white background, thin border, Poppins
- * Accent: #45C1BF teal
+ * Accent: #49C1BE teal
  */
 export default function Header() {
   return (
@@ -27,7 +27,7 @@ export default function Header() {
           target="_blank"
           rel="noopener noreferrer"
           className="text-sm font-semibold px-4 py-1.5 rounded-md transition-opacity hover:opacity-85"
-          style={{ background: '#45C1BF', color: '#0d3534' }}
+          style={{ background: '#49C1BE', color: '#0d3534' }}
         >
           Find a Dealer
         </a>

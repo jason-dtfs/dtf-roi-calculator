@@ -104,7 +104,7 @@ function SliderField({ label, tooltip, value, min, max, step, prefix, suffix, de
         onChange={(e) => onChange(parseFloat(e.target.value))}
         className="w-full"
         style={{
-          background: `linear-gradient(to right, #45C1BF 0%, #45C1BF ${percent}%, oklch(0.91 0.004 260) ${percent}%, oklch(0.91 0.004 260) 100%)`,
+          background: `linear-gradient(to right, #49C1BE 0%, #49C1BE ${percent}%, oklch(0.91 0.004 260) ${percent}%, oklch(0.91 0.004 260) 100%)`,
         }}
       />
     </div>
@@ -144,17 +144,17 @@ export default function BusinessInputs({ inputs, onChange, onBack, onContinue, b
                 className="w-full text-left px-3.5 py-3 rounded-lg border transition-all"
                 style={
                   isActive
-                    ? { borderColor: '#45C1BF', background: 'rgba(69,193,191,0.07)' }
+                    ? { borderColor: '#49C1BE', background: 'rgba(73,193,190,0.07)' }
                     : { borderColor: 'oklch(0.91 0.004 260)', background: 'transparent' }
                 }
               >
                 <div className="flex items-center gap-3">
                   <div
                     className="w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center"
-                    style={{ borderColor: isActive ? '#45C1BF' : 'oklch(0.7 0.004 260)' }}
+                    style={{ borderColor: isActive ? '#49C1BE' : 'oklch(0.7 0.004 260)' }}
                   >
                     {isActive && (
-                      <div className="w-1.5 h-1.5 rounded-full" style={{ background: '#45C1BF' }} />
+                      <div className="w-1.5 h-1.5 rounded-full" style={{ background: '#49C1BE' }} />
                     )}
                   </div>
                   <div>
@@ -184,7 +184,7 @@ export default function BusinessInputs({ inputs, onChange, onBack, onContinue, b
                 onClick={() => onChange('printsPerDay', ppd)}
                 className="flex flex-col items-center gap-0.5 px-2 py-2.5 rounded-lg border transition-all"
                 style={isActive
-                  ? { borderColor: '#45C1BF', background: 'rgba(69,193,191,0.07)' }
+                  ? { borderColor: '#49C1BE', background: 'rgba(73,193,190,0.07)' }
                   : { borderColor: 'oklch(0.91 0.004 260)', background: 'transparent' }}
               >
                 <span className="text-xs font-semibold text-foreground">{t.label}</span>
@@ -330,7 +330,7 @@ export default function BusinessInputs({ inputs, onChange, onBack, onContinue, b
               <button
                 onClick={() => onChange('inkCostPerMonth', printer.inkCostPreset)}
                 className="text-xs font-semibold transition-colors hover:opacity-80"
-                style={{ color: '#45C1BF' }}
+                style={{ color: '#49C1BE' }}
               >
                 Use ${printer.inkCostPreset.toLocaleString()}/mo
               </button>
@@ -391,7 +391,7 @@ export default function BusinessInputs({ inputs, onChange, onBack, onContinue, b
         <button
           onClick={onContinue}
           className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-sm font-semibold hover:opacity-90 transition-opacity"
-          style={{ background: '#45C1BF', color: '#0d3534' }}
+          style={{ background: '#49C1BE', color: '#0d3534' }}
         >
           Financing Options
           <ChevronRight className="w-4 h-4" />

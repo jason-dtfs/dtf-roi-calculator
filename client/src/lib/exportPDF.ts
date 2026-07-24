@@ -85,16 +85,16 @@ export function exportROIPDF(inputs: ROIInputs, results: ROIResults) {
       align-items: center;
       justify-content: space-between;
       padding-bottom: 4mm;
-      border-bottom: 2px solid #45C1BF;
+      border-bottom: 2px solid #49C1BE;
     }
     .header-left { display: flex; flex-direction: column; gap: 2px; }
-    .brand-label { font-size: 8px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #45C1BF; }
+    .brand-label { font-size: 8px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #49C1BE; }
     .report-title { font-size: 18px; font-weight: 800; color: #111827; line-height: 1.1; }
     .report-sub { font-size: 10px; color: #6b7280; margin-top: 1px; }
     .header-right { text-align: right; }
     .header-date { font-size: 9px; color: #9ca3af; }
     .logo-text { font-size: 14px; font-weight: 800; color: #111827; letter-spacing: -0.02em; }
-    .logo-accent { color: #45C1BF; }
+    .logo-accent { color: #49C1BE; }
     /* Section title */
     .section-title {
       font-size: 8px;
@@ -113,7 +113,7 @@ export function exportROIPDF(inputs: ROIInputs, results: ROIResults) {
       padding: 3mm 4mm;
     }
     .kpi-label { font-size: 8px; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 1mm; }
-    .kpi-value { font-size: 18px; font-weight: 800; color: #45C1BF; line-height: 1; }
+    .kpi-value { font-size: 18px; font-weight: 800; color: #49C1BE; line-height: 1; }
     .kpi-sub { font-size: 8px; color: #9ca3af; margin-top: 1mm; }
     /* Two column layout */
     .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 4mm; }
@@ -148,7 +148,7 @@ export function exportROIPDF(inputs: ROIInputs, results: ROIResults) {
     .breakdown-table tr:last-child td { border-bottom: none; }
     .breakdown-table .label { color: #6b7280; }
     .breakdown-table .value { text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; }
-    .breakdown-table .value.positive { color: #45C1BF; }
+    .breakdown-table .value.positive { color: #49C1BE; }
     .breakdown-table .value.negative { color: #ef4444; }
     .breakdown-table .total-row td { font-weight: 700; font-size: 11px; padding-top: 2mm; border-top: 2px solid #e5e7eb; }
     /* Chart */
@@ -174,7 +174,7 @@ export function exportROIPDF(inputs: ROIInputs, results: ROIResults) {
     }
     .footer-note { font-size: 8px; color: #9ca3af; max-width: 140mm; }
     .footer-cta {
-      background: #45C1BF;
+      background: #49C1BE;
       color: #0d3534;
       font-weight: 700;
       font-size: 9px;
@@ -287,12 +287,12 @@ export function exportROIPDF(inputs: ROIInputs, results: ROIResults) {
       <svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;display:block;">
         <defs>
           <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stop-color="#45C1BF" stop-opacity="0.18"/>
-            <stop offset="100%" stop-color="#45C1BF" stop-opacity="0"/>
+            <stop offset="0%" stop-color="#49C1BE" stop-opacity="0.18"/>
+            <stop offset="100%" stop-color="#49C1BE" stop-opacity="0"/>
           </linearGradient>
         </defs>
         ${zeroLine}
-        <polyline points="${points}" fill="none" stroke="#45C1BF" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+        <polyline points="${points}" fill="none" stroke="#49C1BE" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
       </svg>
       <div class="chart-label">${breakevenLabel} · Months 1–36</div>
     </div>

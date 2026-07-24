@@ -1,7 +1,7 @@
 /**
  * ComparisonMode — DTF Station ROI Calculator
  * Side-by-side comparison of two equipment configurations.
- * Design: Clean minimal, Poppins, teal (#45C1BF) accent
+ * Design: Clean minimal, Poppins, teal (#49C1BE) accent
  */
 
 import { useState, useMemo } from 'react';
@@ -414,7 +414,7 @@ function specWinner(a: number, b: number): 'A' | 'B' | null {
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
-const COLOR_A = '#45C1BF';
+const COLOR_A = '#49C1BE';
 const COLOR_B = '#6366F1';
 
 export default function ComparisonMode() {
@@ -517,7 +517,7 @@ export default function ComparisonMode() {
                     className="flex-1 py-1 px-2 rounded-md border text-xs font-medium transition-all"
                     style={
                       isActive
-                        ? { borderColor: '#45C1BF', background: 'rgba(69,193,191,0.07)', color: '#45C1BF' }
+                        ? { borderColor: '#49C1BE', background: 'rgba(73,193,190,0.07)', color: '#49C1BE' }
                         : { borderColor: 'oklch(0.91 0.004 260)', color: 'oklch(0.52 0.01 260)', background: 'transparent' }
                     }
                   >
@@ -539,7 +539,7 @@ export default function ComparisonMode() {
                 onChange={e => setSharedVolume(BASIC_VOLUME_STEPS[Number(e.target.value)])}
                 className="flex-1"
                 style={{
-                  background: `linear-gradient(to right, #45C1BF 0%, #45C1BF ${(BASIC_VOLUME_STEPS.indexOf(sharedVolume) / (BASIC_VOLUME_STEPS.length - 1)) * 100}%, oklch(0.91 0.004 260) ${(BASIC_VOLUME_STEPS.indexOf(sharedVolume) / (BASIC_VOLUME_STEPS.length - 1)) * 100}%, oklch(0.91 0.004 260) 100%)`,
+                  background: `linear-gradient(to right, #49C1BE 0%, #49C1BE ${(BASIC_VOLUME_STEPS.indexOf(sharedVolume) / (BASIC_VOLUME_STEPS.length - 1)) * 100}%, oklch(0.91 0.004 260) ${(BASIC_VOLUME_STEPS.indexOf(sharedVolume) / (BASIC_VOLUME_STEPS.length - 1)) * 100}%, oklch(0.91 0.004 260) 100%)`,
                 }}
               />
               <span className="text-xs font-semibold font-data w-20 text-right whitespace-nowrap">{sharedVolume.toLocaleString()} /mo</span>
@@ -556,7 +556,7 @@ export default function ComparisonMode() {
                   onChange={e => setSharedSellingPrice(parseFloat(e.target.value))}
                   className="flex-1"
                   style={{
-                    background: `linear-gradient(to right, #45C1BF 0%, #45C1BF ${priceSliderPct(sharedSellingPrice)}%, oklch(0.91 0.004 260) ${priceSliderPct(sharedSellingPrice)}%, oklch(0.91 0.004 260) 100%)`,
+                    background: `linear-gradient(to right, #49C1BE 0%, #49C1BE ${priceSliderPct(sharedSellingPrice)}%, oklch(0.91 0.004 260) ${priceSliderPct(sharedSellingPrice)}%, oklch(0.91 0.004 260) 100%)`,
                   }}
                 />
                 <span className="text-xs font-semibold font-data w-10 text-right">${sharedSellingPrice.toFixed(2)}</span>
@@ -574,7 +574,7 @@ export default function ComparisonMode() {
                   onChange={e => setSharedSellingPricePerShirt(parseFloat(e.target.value))}
                   className="flex-1"
                   style={{
-                    background: `linear-gradient(to right, #45C1BF 0%, #45C1BF ${shirtPriceSliderPct(sharedSellingPricePerShirt)}%, oklch(0.91 0.004 260) ${shirtPriceSliderPct(sharedSellingPricePerShirt)}%, oklch(0.91 0.004 260) 100%)`,
+                    background: `linear-gradient(to right, #49C1BE 0%, #49C1BE ${shirtPriceSliderPct(sharedSellingPricePerShirt)}%, oklch(0.91 0.004 260) ${shirtPriceSliderPct(sharedSellingPricePerShirt)}%, oklch(0.91 0.004 260) 100%)`,
                   }}
                 />
                 <span className="text-xs font-semibold font-data w-10 text-right">${sharedSellingPricePerShirt.toFixed(2)}</span>
@@ -787,7 +787,7 @@ export default function ComparisonMode() {
           target="_blank"
           rel="noopener noreferrer"
           className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold transition-opacity hover:opacity-90"
-          style={{ background: '#45C1BF', color: '#0d3534' }}
+          style={{ background: '#49C1BE', color: '#0d3534' }}
         >
           Find a Dealer
         </a>

@@ -1,6 +1,6 @@
 /**
  * ResultsDashboard — DTF Station ROI Calculator
- * Clean minimal: white cards, Poppins, teal (#45C1BF) accents
+ * Clean minimal: white cards, Poppins, teal (#49C1BE) accents
  * Features: KPI cards, charts, share button, How We Calculate This accordion
  */
 
@@ -23,7 +23,7 @@ interface Props {
 }
 
 // Brand teal
-const BRAND_HEX = '#45C1BF';
+const BRAND_HEX = '#49C1BE';
 const BRAND_DARK = '#0d3534';
 
 function KPICard({
@@ -42,13 +42,13 @@ function KPICard({
   return (
     <div
       className="section-card flex flex-col gap-2"
-      style={accent ? { borderColor: 'rgba(69,193,191,0.35)', background: 'rgba(69,193,191,0.04)' } : {}}
+      style={accent ? { borderColor: 'rgba(73,193,190,0.35)', background: 'rgba(73,193,190,0.04)' } : {}}
     >
       <div className="flex items-center justify-between">
         <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{label}</span>
         <div
           className="w-7 h-7 rounded-md flex items-center justify-center"
-          style={accent ? { background: 'rgba(69,193,191,0.12)' } : { background: 'oklch(0.96 0.003 260)' }}
+          style={accent ? { background: 'rgba(73,193,190,0.12)' } : { background: 'oklch(0.96 0.003 260)' }}
         >
           <Icon
             className="w-3.5 h-3.5"
@@ -540,7 +540,7 @@ export default function ResultsDashboard({ results, inputs, onShare, businessMod
       <AssumptionsAccordion />
 
       {/* CTA */}
-      <div className="section-card" style={{ borderColor: 'rgba(69,193,191,0.25)', background: 'rgba(69,193,191,0.03)' }}>
+      <div className="section-card" style={{ borderColor: 'rgba(73,193,190,0.25)', background: 'rgba(73,193,190,0.03)' }}>
         <h3 className="text-sm font-bold text-foreground mb-1">Ready to get started?</h3>
         <p className="text-xs text-muted-foreground mb-4">
           Contact a DTF Station dealer for a personalized quote and financing options.
@@ -551,7 +551,7 @@ export default function ResultsDashboard({ results, inputs, onShare, businessMod
             target="_blank"
             rel="noopener noreferrer"
             className="flex-1 text-center py-2.5 rounded-lg text-sm font-semibold hover:opacity-85 transition-opacity"
-            style={{ background: '#45C1BF', color: BRAND_DARK }}
+            style={{ background: '#49C1BE', color: BRAND_DARK }}
           >
             Find a Dealer
           </a>

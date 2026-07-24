@@ -623,7 +623,7 @@ export function calculateROI(inputs: ROIInputs, businessModel: 'transfers' | 'ga
     ...(monthlyBlankGarmentCost > 0 ? [{ name: 'Blank Garments', value: Math.round(monthlyBlankGarmentCost), color: '#EC4899' }] : []),
     { name: 'Labor', value: Math.round(monthlyLaborCost), color: '#8B5CF6' },
     { name: 'Equipment Pmt', value: Math.round(monthlyLoanPayment), color: '#6B7280' },
-    { name: 'Net Profit', value: Math.max(0, Math.round(monthlyNetProfit)), color: '#45C1BF' },
+    { name: 'Net Profit', value: Math.max(0, Math.round(monthlyNetProfit)), color: '#49C1BE' },
   ];
 
   return {
