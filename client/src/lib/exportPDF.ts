@@ -302,7 +302,7 @@ export function exportROIPDF(inputs: ROIInputs, results: ROIResults) {
   <div>
     <div class="section-title">Input Assumptions</div>
     <div class="assumptions-grid">
-      <div class="assumption-item"><strong>Prints per Day</strong>${inputs.printsPerDay.toLocaleString()} pcs</div>
+      <div class="assumption-item"><strong>Prints per Day</strong>${Math.round(inputs.printsPerDay).toLocaleString()} pcs</div>
       <div class="assumption-item"><strong>Operating Days/Month</strong>${inputs.operatingDaysPerMonth} days</div>
       <div class="assumption-item"><strong>Monthly Prints</strong>${results.monthlyPrints.toLocaleString()} pcs</div>
       <div class="assumption-item"><strong>Selling Price / Print</strong>$${inputs.sellingPricePerPrint.toFixed(2)}</div>

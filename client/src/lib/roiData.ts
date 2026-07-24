@@ -681,7 +681,7 @@ export const DEFAULT_INPUTS: ROIInputs = {
   heatPressId: 'prismaAuto',
   cutterId: null,
   otherEquipmentIds: [],
-  printsPerDay: 240,
+  printsPerDay: 45,          // ~1,000 units/month at 22 operating days — a realistic side-business default
   operatingDaysPerMonth: 22,
   sellingPricePerPrint: 4.50,
   filmAndPowderCostPerPrint: 0.75,

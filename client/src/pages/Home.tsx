@@ -41,7 +41,7 @@ const STR_KEYS: Array<keyof ROIInputs> = ['printerId', 'shakerId', 'heatPressId'
 
 function encodeInputsToURL(
   inputs: ROIInputs,
-  businessModel: BusinessModel = 'transfers',
+  businessModel: BusinessModel = 'garments',
   uiMode: UIMode = 'advanced',
   vol: number | null = null,
 ): string {
@@ -50,7 +50,7 @@ function encodeInputsToURL(
   NUM_KEYS.forEach(k => params.set(k, String(inputs[k])));
   if (inputs.cutterId) params.set('cutterId', inputs.cutterId);
   if (inputs.otherEquipmentIds.length) params.set('otherEquipmentIds', inputs.otherEquipmentIds.join(','));
-  if (businessModel !== 'transfers') params.set('businessModel', businessModel);
+  if (businessModel !== 'garments') params.set('businessModel', businessModel);
   if (uiMode !== 'advanced') params.set('mode', uiMode);
   if (vol !== null) params.set('vol', String(vol));
   return `${window.location.origin}${window.location.pathname}?${params.toString()}`;
@@ -116,6 +116,14 @@ function defaultVolumeStep(breakEven: number): number {
   return BASIC_VOLUME_STEPS.find(v => v >= breakEven) ?? BASIC_VOLUME_STEPS[BASIC_VOLUME_STEPS.length - 1];
 }
 
+/** Closest ladder preset to an arbitrary monthly volume (used to reconcile Advanced → Basic). */
+function nearestVolumeStep(monthly: number): number {
+  return BASIC_VOLUME_STEPS.reduce(
+    (best, v) => (Math.abs(v - monthly) < Math.abs(best - monthly) ? v : best),
+    BASIC_VOLUME_STEPS[0],
+  );
+}
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 type Section = 'equipment' | 'business' | 'financing';
@@ -135,7 +143,7 @@ export default function Home() {
   }));
   const [businessModel, setBusinessModel] = useState<BusinessModel>(() => {
     const val = new URLSearchParams(window.location.search).get('businessModel');
-    return val === 'garments' || val === 'hybrid' ? val : 'transfers';
+    return val === 'transfers' || val === 'hybrid' ? val : 'garments';
   });
   const [uiMode, setUIMode] = useState<UIMode>(() => {
     const val = new URLSearchParams(window.location.search).get('mode');
@@ -148,19 +156,17 @@ export default function Home() {
       const parsed = parseInt(volStr, 10);
       if (!isNaN(parsed) && parsed > 0) return parsed;
     }
+    // Snap the initial per-day volume to the nearest ladder preset so the
+    // highlighted button always matches the underlying prints/day.
     const initInputs: ROIInputs = { ...DEFAULT_INPUTS, ...decodeInputsFromURL() };
-    const initBM: BusinessModel = (() => {
-      const v = params.get('businessModel');
-      return v === 'garments' || v === 'hybrid' ? v : 'transfers';
-    })();
-    return defaultVolumeStep(computeBreakEvenVolume(initInputs, initBM));
+    return nearestVolumeStep(initInputs.printsPerDay * initInputs.operatingDaysPerMonth);
   });
   const [breakEvenMonthlyVolume, setBreakEvenMonthlyVolume] = useState<number>(() => {
     const params = new URLSearchParams(window.location.search);
     const initInputs: ROIInputs = { ...DEFAULT_INPUTS, ...decodeInputsFromURL() };
     const initBM: BusinessModel = (() => {
       const v = params.get('businessModel');
-      return v === 'garments' || v === 'hybrid' ? v : 'transfers';
+      return v === 'transfers' || v === 'hybrid' ? v : 'garments';
     })();
     return computeBreakEvenVolume(initInputs, initBM);
   });
@@ -194,7 +200,7 @@ export default function Home() {
     setBasicModeVolume(vol);
     setInputs(prev => ({
       ...prev,
-      printsPerDay: Math.max(1, Math.round(vol / prev.operatingDaysPerMonth)),
+      printsPerDay: vol / prev.operatingDaysPerMonth,
     }));
   }, []);
 
@@ -218,7 +224,7 @@ export default function Home() {
       setBasicModeVolume(vol);
       return {
         ...tentativeInputs,
-        printsPerDay: Math.max(1, Math.round(vol / prev.operatingDaysPerMonth)),
+        printsPerDay: vol / prev.operatingDaysPerMonth,
       };
     });
   }, [businessModel]);
@@ -244,7 +250,7 @@ export default function Home() {
       setBasicModeVolume(vol);
       return {
         ...bundleInputs,
-        printsPerDay: Math.max(1, Math.round(vol / prev.operatingDaysPerMonth)),
+        printsPerDay: vol / prev.operatingDaysPerMonth,
       };
     });
   }, [businessModel]);
@@ -257,7 +263,7 @@ export default function Home() {
       if (uiMode === 'basic') {
         const vol = defaultVolumeStep(be);
         setBasicModeVolume(vol);
-        return { ...prev, printsPerDay: Math.max(1, Math.round(vol / prev.operatingDaysPerMonth)) };
+        return { ...prev, printsPerDay: vol / prev.operatingDaysPerMonth };
       } else {
         return model === 'garments' && prev.printsPerDay > 100
           ? { ...prev, printsPerDay: 100 }
@@ -265,6 +271,22 @@ export default function Home() {
       }
     });
   }, [uiMode]);
+
+  const handleSetUIMode = useCallback((next: UIMode) => {
+    // Advanced → Basic: snap the current per-day volume to the nearest ladder
+    // preset and re-sync prints/day, so the highlighted button and the displayed
+    // numbers always agree. Basic → Advanced needs no reconciliation because
+    // prints/day is already kept in lock-step with the selected preset.
+    if (next === 'basic') {
+      setInputs(prev => {
+        const monthly = prev.printsPerDay * prev.operatingDaysPerMonth;
+        const snapped = nearestVolumeStep(monthly);
+        setBasicModeVolume(snapped);
+        return { ...prev, printsPerDay: snapped / prev.operatingDaysPerMonth };
+      });
+    }
+    setUIMode(next);
+  }, []);
 
   const handleShare = useCallback(() => {
     const url = encodeInputsToURL(inputs, businessModel, uiMode, uiMode === 'basic' ? basicModeVolume : null);
@@ -356,7 +378,7 @@ export default function Home() {
             <div className="space-y-1.5">
               <div className="flex rounded-lg border border-border bg-white overflow-hidden w-fit">
                 <button
-                  onClick={() => setUIMode('basic')}
+                  onClick={() => handleSetUIMode('basic')}
                   className={`flex items-center gap-1.5 px-5 py-2.5 text-sm font-medium transition-colors ${
                     uiMode !== 'basic' ? 'text-muted-foreground hover:text-foreground hover:bg-muted/40' : ''
                   }`}
@@ -365,7 +387,7 @@ export default function Home() {
                   Basic
                 </button>
                 <button
-                  onClick={() => setUIMode('advanced')}
+                  onClick={() => handleSetUIMode('advanced')}
                   className={`flex items-center gap-1.5 px-5 py-2.5 text-sm font-medium transition-colors border-l border-border ${
                     uiMode !== 'advanced' ? 'text-muted-foreground hover:text-foreground hover:bg-muted/40' : ''
                   }`}
