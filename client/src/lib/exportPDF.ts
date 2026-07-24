@@ -308,7 +308,6 @@ export function exportROIPDF(inputs: ROIInputs, results: ROIResults) {
       <div class="assumption-item"><strong>Selling Price / Print</strong>$${inputs.sellingPricePerPrint.toFixed(2)}</div>
       <div class="assumption-item"><strong>Film & Powder / Print</strong>$${inputs.filmAndPowderCostPerPrint.toFixed(2)}</div>
       <div class="assumption-item"><strong>Monthly Ink Cost</strong>${fmt(inputs.inkCostPerMonth)}</div>
-      <div class="assumption-item"><strong>Labor Hours / Day</strong>${inputs.laborHoursPerDay} hrs</div>
       <div class="assumption-item"><strong>Labor Cost / Hour</strong>$${inputs.laborCostPerHour.toFixed(0)}</div>
       <div class="assumption-item"><strong>Profit Margin</strong>${pct(results.profitMargin)}</div>
       <div class="assumption-item"><strong>Down Payment</strong>${pct(inputs.downPaymentPercent)} (${fmt(results.downPayment)})</div>

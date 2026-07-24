@@ -163,7 +163,7 @@ const ASSUMPTIONS: AssumptionItem[] = [
   },
   {
     title: 'Consumable Costs',
-    content: 'Monthly Consumable Cost = Prints Per Day × Operating Days Per Month × Consumable Cost Per Print. This covers DTF film, ink (CMYK + White), and hot-melt adhesive powder. Typical Color Prime consumable cost is $0.80–$1.50 per print depending on print size and ink coverage.',
+    content: 'Consumables are charged as two distinct line items. Film & Powder is a per-print cost: Film & Powder Cost Per Print × Monthly Prints (typically $0.30–$0.80 per print). Ink is billed separately as a flat Monthly Ink Cost that does not scale with volume and varies by printer. The two are added together to form your total monthly consumable cost.',
   },
   {
     title: 'Labor Costs',
@@ -183,7 +183,7 @@ const ASSUMPTIONS: AssumptionItem[] = [
   },
   {
     title: '3-Year ROI',
-    content: '3-Year ROI % = (36-Month Net Profit − Down Payment) ÷ Down Payment × 100. This measures the return on your initial cash outlay (down payment) over a 3-year horizon. If you paid cash in full, the down payment equals the total equipment cost.',
+    content: '3-Year ROI % = (36-Month Net Profit − Total Equipment Cost) ÷ Total Equipment Cost × 100. This measures your return over a 3-year horizon against the full equipment investment — the same investment basis used for the Payback Period, so the two headline metrics are directly comparable.',
   },
   {
     title: 'Outsourcing Savings',
@@ -191,7 +191,7 @@ const ASSUMPTIONS: AssumptionItem[] = [
   },
   {
     title: 'Default Assumptions',
-    content: 'Default inputs assume: 22 operating days/month (standard business month), $4.50 selling price (mid-market retail transfer price), $1.25 consumable cost (Color Prime consumables), 4 labor hours/day at $18/hr, 20% down payment at 7.9% APR over 36 months. These are illustrative starting points — adjust all inputs to match your specific business.',
+    content: 'Default inputs assume: 22 operating days/month (standard business month), $4.50 selling price (mid-market retail transfer price), $0.75 film & powder per print plus a separate monthly ink cost, an $18/hr labor rate, 20% down payment at 7.9% APR over 36 months. These are illustrative starting points — adjust all inputs to match your specific business.',
   },
 ];
 
@@ -377,7 +377,7 @@ export default function ResultsDashboard({ results, inputs, onShare, businessMod
           <div>
             <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: '#1a7a78' }}>Monthly Outsourcing Savings</p>
             <p className="text-xs mt-0.5" style={{ color: '#2a9a96' }}>
-              vs. buying {inputs.currentMonthlyOutsourcingVolume.toLocaleString()} transfers at ${inputs.outsourcingCostPerPrint}/ea
+              vs. buying {results.outsourcingComparisonVolume.toLocaleString()} transfers at ${inputs.outsourcingCostPerPrint}/ea
             </p>
           </div>
           <span className="text-xl font-bold font-data" style={{ color: '#1a7a78' }}>
@@ -525,8 +525,8 @@ export default function ResultsDashboard({ results, inputs, onShare, businessMod
             { label: 'Gross Profit', value: formatCurrency(results.monthlyGrossProfit) },
             { label: 'Revenue', value: formatCurrency(results.monthlyRevenue) },
             { label: 'Profit Margin', value: results.monthlyRevenue > 0 ? `${Math.round((results.monthlyNetProfit / results.monthlyRevenue) * 100)}%` : 'N/A' },
-            { label: 'Cost / Print', value: results.monthlyPrints > 0 ? `$${results.costPerPrint.toFixed(2)}` : 'N/A' },
-            { label: 'Profit / Print', value: results.monthlyPrints > 0 ? `$${results.profitPerPrint.toFixed(2)}` : 'N/A' },
+            { label: businessModel === 'garments' ? 'Cost / Shirt' : 'Cost / Print', value: results.monthlyPrints > 0 ? `$${results.costPerPrint.toFixed(2)}` : 'N/A' },
+            { label: businessModel === 'garments' ? 'Profit / Shirt' : 'Profit / Print', value: results.monthlyPrints > 0 ? `$${results.profitPerPrint.toFixed(2)}` : 'N/A' },
           ].map(({ label, value }) => (
             <div key={label} className="flex justify-between items-center py-2 border-b border-border last:border-0">
               <span className="text-xs text-muted-foreground">{label}</span>

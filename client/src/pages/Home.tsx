@@ -32,7 +32,7 @@ import { Share2, ArrowLeftRight, Calculator, ChevronUp } from 'lucide-react';
 
 const NUM_KEYS: Array<keyof ROIInputs> = [
   'printsPerDay', 'operatingDaysPerMonth', 'sellingPricePerPrint',
-  'filmAndPowderCostPerPrint', 'inkCostPerMonth', 'laborHoursPerDay', 'laborCostPerHour',
+  'filmAndPowderCostPerPrint', 'inkCostPerMonth', 'laborCostPerHour',
   'outsourcingCostPerPrint', 'currentMonthlyOutsourcingVolume',
   'sellingPricePerShirt', 'blankGarmentCostPerShirt', 'printsPerShirt',
   'downPaymentPercent', 'loanInterestRate', 'loanTermMonths',

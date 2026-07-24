@@ -427,7 +427,7 @@ export default function ComparisonMode() {
   const [sharedVolume, setSharedVolume] = useState<number>(1000);
   const [sharedBusinessModel, setSharedBusinessModel] = useState<BusinessModel>('transfers');
   const [sharedSellingPrice, setSharedSellingPrice] = useState<number>(4.50);
-  const [sharedSellingPricePerShirt, setSharedSellingPricePerShirt] = useState<number>(18);
+  const [sharedSellingPricePerShirt, setSharedSellingPricePerShirt] = useState<number>(16);
 
   // Merge shared scenario into each config's inputs before running calculateROI
   const effectiveA = useMemo(

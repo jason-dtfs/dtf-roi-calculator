@@ -261,7 +261,7 @@ export default function BusinessInputs({ inputs, onChange, onBack, onContinue, b
           <SliderField
             label="Selling price per finished shirt"
             tooltip="Your average selling price per completed garment (blank + pressed transfer)."
-            value={inputs.sellingPricePerShirt ?? 18}
+            value={inputs.sellingPricePerShirt ?? 16}
             min={10}
             max={50}
             step={0.5}
@@ -274,7 +274,7 @@ export default function BusinessInputs({ inputs, onChange, onBack, onContinue, b
             tooltip="Your landed cost for a blank shirt before printing. Gildan Softstyle runs ~$3–$5; premium blanks run higher."
             value={inputs.blankGarmentCostPerShirt ?? 4.5}
             min={0}
-            max={Math.min(20, Math.max(1, (inputs.sellingPricePerShirt ?? 18) - 1))}
+            max={Math.min(20, Math.max(1, (inputs.sellingPricePerShirt ?? 16) - 1))}
             step={0.25}
             prefix="$"
             decimals={2}
@@ -340,17 +340,6 @@ export default function BusinessInputs({ inputs, onChange, onBack, onContinue, b
       </SectionGroup>
 
       <SectionGroup title="Labor Costs">
-        <SliderField
-          label="Labor hours per day"
-          tooltip="Hours of operator time required per production day."
-          value={inputs.laborHoursPerDay}
-          min={0.5}
-          max={12}
-          step={0.5}
-          suffix="hrs"
-          decimals={1}
-          onChange={(v) => onChange('laborHoursPerDay', v)}
-        />
         <SliderField
           label="Labor cost per hour"
           tooltip="Hourly wage for your DTF operator."

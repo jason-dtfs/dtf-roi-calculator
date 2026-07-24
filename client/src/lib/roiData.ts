@@ -449,7 +449,6 @@ export interface ROIInputs {
   sellingPricePerPrint: number;
   filmAndPowderCostPerPrint: number;   // film + powder cost per print
   inkCostPerMonth: number;             // monthly ink cost (flat)
-  laborHoursPerDay: number;
   laborCostPerHour: number;
   outsourcingCostPerPrint: number;
   currentMonthlyOutsourcingVolume: number;
@@ -477,6 +476,7 @@ export interface ROIResults {
   monthlyGrossProfit: number;
   monthlyNetProfit: number;
   monthlyOutsourcingSavings: number;
+  outsourcingComparisonVolume: number;
   annualRevenue: number;
   annualNetProfit: number;
   paybackPeriodMonths: number;
@@ -539,7 +539,7 @@ export function calculateROI(inputs: ROIInputs, businessModel: 'transfers' | 'ga
   let monthlyRevenue: number;
   let monthlyBlankGarmentCost = 0;
 
-  const sellingPricePerShirt = Number.isFinite(inputs.sellingPricePerShirt) ? inputs.sellingPricePerShirt : 18;
+  const sellingPricePerShirt = Number.isFinite(inputs.sellingPricePerShirt) ? inputs.sellingPricePerShirt : 16;
   const blankGarmentCostPerShirt = Number.isFinite(inputs.blankGarmentCostPerShirt) ? inputs.blankGarmentCostPerShirt : 4.5;
 
   let hybridTransfers = 0;
@@ -577,11 +577,15 @@ export function calculateROI(inputs: ROIInputs, businessModel: 'transfers' | 'ga
   const monthlyGrossProfit = monthlyRevenue - monthlyTotalConsumableCost - monthlyLaborCost;
   const monthlyNetProfit = monthlyGrossProfit - monthlyLoanPayment;
 
+  // Compare only against transfers the business actually produces, never a fixed 500.
+  const transfersProducedMonthly =
+    businessModel === 'hybrid' ? hybridTransfers
+    : businessModel === 'transfers' ? monthlyPrints
+    : 0;
+  const outsourcingComparisonVolume = Math.min(inputs.currentMonthlyOutsourcingVolume, transfersProducedMonthly);
   const monthlyOutsourcingSavings =
-    businessModel === 'transfers' || businessModel === 'hybrid'
-      ? inputs.currentMonthlyOutsourcingVolume *
-        (inputs.outsourcingCostPerPrint - (inputs.filmAndPowderCostPerPrint + (monthlyPrints > 0 ? inputs.inkCostPerMonth / monthlyPrints : 0)))
-      : 0;
+    outsourcingComparisonVolume *
+    (inputs.outsourcingCostPerPrint - (inputs.filmAndPowderCostPerPrint + (monthlyPrints > 0 ? inputs.inkCostPerMonth / monthlyPrints : 0)));
 
   const annualRevenue = monthlyRevenue * 12;
   const annualNetProfit = monthlyNetProfit * 12;
@@ -589,8 +593,9 @@ export function calculateROI(inputs: ROIInputs, businessModel: 'transfers' | 'ga
   const paybackPeriodMonths =
     monthlyNetProfit > 0 ? Math.ceil(totalEquipmentCost / monthlyNetProfit) : 999;
 
-  const threeYearNetProfit = monthlyNetProfit * 36 - downPayment;
-  const threeYearROI = downPayment > 0 ? (threeYearNetProfit / downPayment) * 100 : 0;
+  // Same investment basis as Payback Period: full equipment cost.
+  const threeYearNetProfit = monthlyNetProfit * 36 - totalEquipmentCost;
+  const threeYearROI = totalEquipmentCost > 0 ? (threeYearNetProfit / totalEquipmentCost) * 100 : 0;
 
   const costPerPrint = monthlyPrints > 0 ? (monthlyTotalConsumableCost + monthlyLaborCost + monthlyLoanPayment) / monthlyPrints : 0;
   const profitPerPrint = monthlyPrints > 0 ? monthlyNetProfit / monthlyPrints : 0;
@@ -635,6 +640,7 @@ export function calculateROI(inputs: ROIInputs, businessModel: 'transfers' | 'ga
     monthlyGrossProfit,
     monthlyNetProfit,
     monthlyOutsourcingSavings,
+    outsourcingComparisonVolume,
     annualRevenue,
     annualNetProfit,
     paybackPeriodMonths,
@@ -680,7 +686,6 @@ export const DEFAULT_INPUTS: ROIInputs = {
   sellingPricePerPrint: 4.50,
   filmAndPowderCostPerPrint: 0.75,
   inkCostPerMonth: 250,
-  laborHoursPerDay: 4,
   laborCostPerHour: 18,
   outsourcingCostPerPrint: 3.50,
   currentMonthlyOutsourcingVolume: 500,
